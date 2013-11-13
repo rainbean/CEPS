@@ -36,3 +36,25 @@ exports.addDevice = function(req, res) {
 	devices.push(req.params.device);
 	fs.writeFile('../db/devices.json', JSON.stringify(devices));
 };
+
+
+/*
+ * GET device network profile in JSON format
+ * 
+ * /v1/NetworkProfile/{EndpointID}/{NetworkID}
+ */
+exports.getNetworkProfile = function(req, res) {
+	var path = '../db/1000/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	res.sendfile(path);
+};
+
+/*
+ * SET device network profile in JSON format
+ */
+exports.setNetworkProfile = function(req, res) {
+	//console.log (req.body);
+	//var user = JSON.parse(req.body);
+	var profile = req.body;
+	var path = '../db/1000/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	fs.writeFile(path, profile);
+};
