@@ -44,7 +44,7 @@ exports.addDevice = function(req, res) {
  * /v1/NetworkProfile/{EndpointID}/{NetworkID}
  */
 exports.getNetworkProfile = function(req, res) {
-	var path = '../db/1000/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	var path = '../db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
 	res.sendfile(path);
 };
 
@@ -57,6 +57,6 @@ exports.setNetworkProfile = function(req, res) {
 	//console.log (req.body);
 	//var user = JSON.parse(req.body);
 	var profile = req.body;
-	var path = '../db/1000/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	var path = '../db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
 	fs.writeFile(path, profile);
 };
