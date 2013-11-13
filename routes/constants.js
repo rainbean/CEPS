@@ -2,10 +2,10 @@
  * Global enum definition
  */
 function define(name, value) {
-    Object.defineProperty(exports, name, {
-        value:      value,
-        enumerable: true
-    });
+	Object.defineProperty(exports, name, {
+		value:      value,
+		enumerable: true
+	});
 }
 
 define("CEPS_MAGIC_CODE", 0x43455053);

@@ -93,13 +93,14 @@ exports.sendMessage = function(req, res) {
 	var constant = require("./constants");
 	
 	// check required parameters
-	if (req.query.DestPort == null || req.query.DestIP == null || 
-			req.query.Nonce == null || req.query.SrcPort == null)
+	if (req.query.DestPort === null || req.query.DestIP === null ||
+			req.query.Nonce === null || req.query.SrcPort === null) {
 		return res.send(400);
+	}
 	
 	if (req.params.SockType === 'UDP') {
 		var dgram = require('dgram');
-		var msg = new Buffer(constant.LEN_REQ_SEND_MSG); 
+		var msg = new Buffer(constant.LEN_REQ_SEND_MSG);
 		
 		msg.fill(0x00); // clear with zero 
 		msg.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
@@ -112,18 +113,20 @@ exports.sendMessage = function(req, res) {
 		res.send(202);
 		
 		var client = dgram.createSocket("udp4");
-		client.bind(req.query.SrcPort, function() {			
+		client.bind(req.query.SrcPort, function() {
 			var count = req.query.Count;
-			if (typeof(count) === 'undefined' || count === null 
-					|| count <= 0 || count >= 20)
+			if (typeof(count) === 'undefined' || count === null ||
+					count <= 0 || count >= 20) {
 				count = 1; // reset to once
+			}
 			
 			var done = count;
 			for (var i=0; i<count; ++i) {
 				client.send(msg, 0, msg.length, req.query.DestPort, req.query.DestIP, function(err, bytes) {
 					done --;
-					if (done === 0)
+					if (done === 0) {
 						client.close();
+					}
 				});
 			}
 		});

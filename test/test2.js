@@ -4,7 +4,7 @@
 var constant = require("../routes/constants");
 
 var dgram = require('dgram');
-var msg = new Buffer(constant.LEN_REQ_GET_EXT_PORT); 
+var msg = new Buffer(constant.LEN_REQ_GET_EXT_PORT);
 
 msg.fill(0x00); // clear with zero 
 msg.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code

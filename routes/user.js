@@ -52,6 +52,8 @@ exports.getNetworkProfile = function(req, res) {
  * SET device network profile in JSON format
  */
 exports.setNetworkProfile = function(req, res) {
+	var fs = require('fs');
+
 	//console.log (req.body);
 	//var user = JSON.parse(req.body);
 	var profile = req.body;
