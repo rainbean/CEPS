@@ -1,16 +1,84 @@
+var udpd; // UDP daemon
+
+function onMessage(msg, remote) {
+	var http = require('http');
+	var S = require('string');
+	var constant = require("./constants");
+
+	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
+    
+	if (msg.length < constant.LEN_MIN_CEPS_MSG) {
+		return; // drop message silently
+	}
+    
+	if (constant.CEPS_MAGIC_CODE !== msg.readUInt32BE(0)) {
+		return; // invalid magic code
+	}
+	if (1 !== msg.readUInt8(4)) {
+		return; // verify version
+	}
+	
+	var cmd = msg.readUInt16BE(5); // msg type
+	var len = msg.readUInt16BE(7); // msg length
+	var nonce = msg.toString('utf8', 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
+	
+	if (constant.REQ_GET_EXT_PORT !== cmd) {
+		return; // unsupported command
+	}
+
+	if (len !== 16) {
+		return; // invalid data length
+	}
+
+	var eid = msg.toString('utf8', constant.LEN_MIN_CEPS_MSG, constant.LEN_REQ_GET_EXT_PORT);
+	eid = S(eid).replaceAll('\u0000', '').trim().s; // remove null or white space
+	
+	// Make a HTTP POST request to push module	
+	var data = {Version: 1, Type: "RepGetExtPort", Nonce: nonce, Port: remote.port};
+	var datastr = JSON.stringify(data) ;
+	//var datastr = 'Hello World\n\n';
+	var options = {
+			hostname: 'ceps.cloudapp.net', // ToDo: change to real push module FQDN
+			port: 80,
+			path: '/pub?id=' + eid,
+			method: 'POST',
+		};
+	
+	var req = http.request(options);
+	
+	req.on('error', function(e) {
+		console.log('problem with request: ' + e.message);
+	});
+	req.write(datastr); // write data to request body
+	req.end();
+}
+
+exports.listen = function() {
+	var dgram = require('dgram');
+	var udpd = dgram.createSocket('udp4');
+	
+	udpd.on('listening', function () {
+		var address = udpd.address();
+		console.log('UDP Server listening on ' + address.address + ":" + address.port);
+	});
+	
+	udpd.on('message', onMessage);
+
+	udpd.bind(23400, '127.0.0.1');
+};
+
+
 /*
  * Exchange the server information data. (Connection Management Server).
  */
 
 exports.list = function(req, res) {
 	var services = {
-			Version: 1,
-			Type: 'ServerInfo',
-			cms: [
-		        {Host: "ceps.cloudapp.net", Port:  [23400,23401,23402]},
-		        {Host: "ceps2.cloudapp.net", Port: [23400,23401,23402]}
-		        ],
-	        requestor: {IP: req.ip}
+		Version: 1,
+		Type: 'ServerInfo',
+		cms:[ {Host: "ceps.cloudapp.net", Port: [23400]}, {Host: "ceps2.cloudapp.net", Port: [23400]}],
+		requestor: {IP: req.ip}
 	};
 	res.send(services);
 };
@@ -24,6 +92,11 @@ exports.list = function(req, res) {
 exports.sendMessage = function(req, res) {
 	var constant = require("./constants");
 	
+	// check required parameters
+	if (req.query.DestPort == null || req.query.DestIP == null || 
+			req.query.Nonce == null || req.query.SrcPort == null)
+		return res.send(400);
+	
 	if (req.params.SockType === 'UDP') {
 		var dgram = require('dgram');
 		var msg = new Buffer(constant.LEN_REQ_SEND_MSG); 
@@ -33,7 +106,7 @@ exports.sendMessage = function(req, res) {
 		msg.writeUInt8(1, 4); // version
 		msg.writeUInt16BE(constant.REQ_SEND_MSG, 5); // msg type
 		msg.writeUInt16BE(0x0000, 7); // msg length
-		msg.write(req.query.Nonce, 9, 16); // msg type
+		msg.write(req.query.Nonce, 9, 16); // msg nonce
 		
 		// return status code before execute UDP message
 		res.send(202);
@@ -60,6 +133,6 @@ exports.sendMessage = function(req, res) {
 		 */
 		return res.send(501, 'TCP not implemented');
 	} else {
-		return res.send(400, 'malformed syntax\n');
+		return res.send(400);
 	}
 };
