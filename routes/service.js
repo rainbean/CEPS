@@ -84,11 +84,20 @@ exports.listen = function() {
  * GET /v1/ServerInfo
  */
 exports.list = function(req, res) {
+	var client_ip;
+	//console.log(req.headers);
+	//console.log(req.headers['x-nginx-proxy']);
+	//console.log(req.headers['x-real-ip']);
+	if (req.headers['x-nginx-proxy']) {
+		client_ip = req.headers['x-real-ip'];
+	} else {
+		client_ip = req.ip;
+	}
 	var services = {
 		Version: 1,
 		Type: 'ServerInfo',
 		cms:[ {Host: "ceps.cloudapp.net", Port: [23400]}, {Host: "ceps2.cloudapp.net", Port: [23400]}],
-		requestor: {IP: req.ip}
+		requestor: {IP: client_ip}
 	};
 	res.send(services);
 };
