@@ -1,5 +1,3 @@
-var udpd; // UDP daemon
-
 /**
  * Handle UDP message request
  * 
@@ -127,12 +125,12 @@ exports.sendMessage = function(req, res) {
 	
 	if (req.params.SockType === 'UDP') {
 		var dgram = require('dgram');
-		var msg = new Buffer(constant.LEN_REQ_SEND_MSG);
+		var msg = new Buffer(constant.LEN_REP_SEND_MSG);
 		
 		msg.fill(0x00); // clear with zero 
 		msg.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
 		msg.writeUInt8(1, 4); // version
-		msg.writeUInt16BE(constant.REQ_SEND_MSG, 5); // msg type
+		msg.writeUInt16BE(constant.REP_SEND_MSG, 5); // msg type
 		msg.writeUInt16BE(0x0000, 7); // msg length
 		msg.write(req.query.Nonce, 9, 16); // msg nonce
 		
