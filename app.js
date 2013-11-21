@@ -34,7 +34,7 @@ app.get('/', routes.index);
 app.get('/Users', user.list);
 app.get('/User/:name', user.getDevice);
 app.post('/User/:name/:device', user.addDevice);
-app.get('/ServiceInfo', service.list);
+app.get('/ServerInfo', service.list);
 app.get('/Message/:SockType', service.sendMessage);
 app.get('/NetworkProfile/:EndpointID/:NetworkID', user.getNetworkProfile);
 app.post('/NetworkProfile/:EndpointID/:NetworkID', user.setNetworkProfile);

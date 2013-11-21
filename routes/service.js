@@ -78,7 +78,7 @@ exports.listen = function() {
 };
 
 
-/*
+/**
  * Exchange the server information data. (Connection Management Server).
  * 
  * GET /v1/ServerInfo
@@ -93,8 +93,16 @@ exports.list = function(req, res) {
 	res.send(services);
 };
 
-/*
- * Endpoint will issue this command. Upon received this message, receiver shall send a socket type message of “RepSendMsg” to specific address and specified port, assigned by “DestIP” and “DestPort”, from specific local port, as value of “SrcPort” field, N times continuously, as value of Count field. Server shall fill the Nonce data field with the value specified in this message command
+/**
+ * Endpoint will issue this command. 
+ * 
+ * Upon received this message, receiver shall send a socket type message of "RepSendMsg" 
+ * to specific address and specified port, assigned by "DestIP" and "DestPort", 
+ * from specific local port, as value of "SrcPort" field, N times continuously, 
+ * as value of Count field. 
+ * 
+ * Server shall fill the Nonce data field with the value specified in this message 
+ * command.
  * 
  * GET /v1/Message/{SocketType}?Nonce={Nonce}&SrcPort={SrcPort}&DestIP={DestIP}&DestPort={DestPort}&Count={Count}
  */
