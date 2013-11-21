@@ -1,5 +1,11 @@
 var udpd; // UDP daemon
 
+/**
+ * Handle UDP message request
+ * 
+ * @param msg Received UDP message 
+ * @param remote Remote peer address 
+ */
 function onMessage(msg, remote) {
 	var http = require('http');
 	var S = require('string');
@@ -54,6 +60,9 @@ function onMessage(msg, remote) {
 	req.end();
 }
 
+/**
+ * Create UDP daemon to listen for UDP request 
+ */
 exports.listen = function() {
 	var dgram = require('dgram');
 	var udpd = dgram.createSocket('udp4');
@@ -71,8 +80,9 @@ exports.listen = function() {
 
 /*
  * Exchange the server information data. (Connection Management Server).
+ * 
+ * GET /v1/ServerInfo
  */
-
 exports.list = function(req, res) {
 	var services = {
 		Version: 1,
