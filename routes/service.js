@@ -16,7 +16,9 @@ function toBytes(str) {
 function toString(bytes) {
 	var hex = [];
 	for (var i=0; i<bytes.length; i++) {
-		hex.push(bytes[i].toString(16));
+		// var b = bytes[i].toString(16); // without zero padding
+		var b = ('00'+bytes[i].toString(16)).substr(-2,2); // with zero padding
+		hex.push(b);
 	}
 	return hex.join('');
 }
@@ -33,6 +35,7 @@ function onMessage(msg, remote) {
 	var constant = require("./constants");
 
 	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
+	//console.log(msg);
     
 	if (msg.length < constant.LEN_MIN_CEPS_MSG) {
 		return; // drop message silently
@@ -50,7 +53,7 @@ function onMessage(msg, remote) {
 	
 	//var nonce = msg.toString('utf8', 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
 	var bytes = new Buffer(16);
-	msg.copy(bytes, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	msg.copy(bytes, 0, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
 	var nonce = toString(bytes);
 	nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
@@ -64,14 +67,15 @@ function onMessage(msg, remote) {
 
 	// var eid = msg.toString('utf8', constant.LEN_MIN_CEPS_MSG, constant.LEN_REQ_GET_EXT_PORT);
 	var bytes2 = new Buffer(len);
-	msg.copy(bytes2, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg eid
-	var eid = toString(bytes);
+	msg.copy(bytes2, 0, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg eid
+	var eid = toString(bytes2);
 	eid = S(eid).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
 	// Make a HTTP POST request to push module	
 	var data = {Version: 1, Type: "RepGetExtPort", Nonce: nonce, Port: remote.port};
 	var datastr = JSON.stringify(data) ;
-	//var datastr = 'Hello World\n\n';
+	//console.log(datastr);
+	
 	var options = {
 			hostname: 'ceps.cloudapp.net', // ToDo: change to real push module FQDN
 			port: 80,
