@@ -1,3 +1,26 @@
+
+/**
+ * Convert hex string to bytes array
+ */
+function toBytes(str) {
+	var bytes = new Buffer(str.length / 2);
+	for (var i = 0; i < str.length; i += 2) {
+		bytes[i/2] = parseInt(str.substr(i, 2), 16);
+	}
+	return bytes;
+}
+
+/**
+ * Convert hex string to bytes array
+ */
+function toString(bytes) {
+	var hex = [];
+	for (var i=0; i<bytes.length; i++) {
+		hex.push(bytes[i].toString(16));
+	}
+	return hex.join('');
+}
+
 /**
  * Handle UDP message request
  * 
@@ -24,7 +47,11 @@ function onMessage(msg, remote) {
 	
 	var cmd = msg.readUInt16BE(5); // msg type
 	var len = msg.readUInt16BE(7); // msg length
-	var nonce = msg.toString('utf8', 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	
+	//var nonce = msg.toString('utf8', 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	var bytes = new Buffer(16);
+	msg.copy(bytes, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	var nonce = toString(bytes);
 	nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
 	if (constant.REQ_GET_EXT_PORT !== cmd) {
@@ -35,7 +62,10 @@ function onMessage(msg, remote) {
 		return; // invalid data length
 	}
 
-	var eid = msg.toString('utf8', constant.LEN_MIN_CEPS_MSG, constant.LEN_REQ_GET_EXT_PORT);
+	// var eid = msg.toString('utf8', constant.LEN_MIN_CEPS_MSG, constant.LEN_REQ_GET_EXT_PORT);
+	var bytes2 = new Buffer(len);
+	msg.copy(bytes2, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg eid
+	var eid = toString(bytes);
 	eid = S(eid).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
 	// Make a HTTP POST request to push module	
@@ -72,7 +102,8 @@ exports.listen = function() {
 	
 	udpd.on('message', onMessage);
 
-	udpd.bind(23400, '127.0.0.1');
+	// udpd.bind(23400, '127.0.0.1'); // bind loopback interface
+	udpd.bind(23400); // bind all interface
 };
 
 
