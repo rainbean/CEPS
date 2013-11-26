@@ -17,6 +17,9 @@ exports.list = function(req, res) {
 exports.getDevice = function(req, res) {
 	var fs = require('fs');
 	
+	// allow cross-domain AJAX request
+	res.setHeader("Access-Control-Allow-Origin", "*");
+
 	// version: read device list from file
 	fs.exists('./db/devices.json', function (exists) {
 		if (!exists) {
