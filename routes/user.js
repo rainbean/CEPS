@@ -16,11 +16,11 @@ exports.list = function(req, res) {
  */
 exports.getDevice = function(req, res) {
 	var fs = require('fs');
-	fs.exists('../db/devices.json', function (exists) {
+	fs.exists('./db/devices.json', function (exists) {
 		if (!exists) {
 			return [];
 		}
-		res.sendfile('../db/devices.json');
+		res.sendfile('./db/devices.json');
 	});
 };
 
@@ -29,12 +29,12 @@ exports.getDevice = function(req, res) {
  */
 exports.addDevice = function(req, res) {
 	var fs = require('fs');
-	var devices = JSON.parse(fs.readFileSync('../db/devices.json'));
+	var devices = JSON.parse(fs.readFileSync('./db/devices.json'));
 	if (typeof(devices) === 'undefined' || devices === null) {
 		devices = [];
 	}
 	devices.push(req.params.device);
-	fs.writeFile('../db/devices.json', JSON.stringify(devices));
+	fs.writeFile('./db/devices.json', JSON.stringify(devices));
 };
 
 
@@ -44,7 +44,7 @@ exports.addDevice = function(req, res) {
  * /v1/NetworkProfile/{EndpointID}/{NetworkID}
  */
 exports.getNetworkProfile = function(req, res) {
-	var path = '../db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	var path = './db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
 	res.sendfile(path);
 };
 
@@ -57,6 +57,6 @@ exports.setNetworkProfile = function(req, res) {
 	//console.log (req.body);
 	//var user = JSON.parse(req.body);
 	var profile = req.body;
-	var path = '../db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
-	fs.writeFile(path, profile);
+	var path = './db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	fs.writeFile(path, JSON.stringify(profile));
 };
