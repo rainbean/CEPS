@@ -81,6 +81,10 @@ function onMessage(msg, remote) {
 			port: 80,
 			path: '/pub?id=' + eid,
 			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': datastr.length
+			}
 		};
 	
 	var req = http.request(options);

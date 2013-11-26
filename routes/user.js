@@ -35,6 +35,7 @@ exports.addDevice = function(req, res) {
 	}
 	devices.push(req.params.device);
 	fs.writeFile('./db/devices.json', JSON.stringify(devices));
+	res.send(202);
 };
 
 
@@ -54,9 +55,8 @@ exports.getNetworkProfile = function(req, res) {
 exports.setNetworkProfile = function(req, res) {
 	var fs = require('fs');
 
-	//console.log (req.body);
-	//var user = JSON.parse(req.body);
 	var profile = req.body;
 	var path = './db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
 	fs.writeFile(path, JSON.stringify(profile));
+	res.send(202);
 };
