@@ -16,11 +16,20 @@ exports.list = function(req, res) {
  */
 exports.getDevice = function(req, res) {
 	var fs = require('fs');
+	
+	// version: read device list from file
+	/*
 	fs.exists('./db/devices.json', function (exists) {
 		if (!exists) {
 			return [];
 		}
 		res.sendfile('./db/devices.json');
+	});
+	*/
+	
+	// version: read device list directly from profile folder
+	fs.readdir('../db/profile', function(err, files) {
+		res.send(files); // return filename list under profile folder 
 	});
 };
 
@@ -68,8 +77,10 @@ exports.getNetworkProfile = function(req, res) {
 exports.setNetworkProfile = function(req, res) {
 	var fs = require('fs');
 
-	var profile = req.body;
-	var path = './db/profile/' + req.params.EndpointID;// + '_' + req.params.NetworkID;
-	fs.writeFile(path, JSON.stringify(profile));
-	res.send(202);
+	fs.mkdir('./db/profile', function(err) {
+		var profile = req.body;
+		var path = './db/profile/' + req.params.EndpointID;// + '_' + req.params.NetworkID;
+		fs.writeFile(path, JSON.stringify(profile));
+		res.send(202);
+	});
 };
