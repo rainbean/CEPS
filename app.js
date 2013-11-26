@@ -32,8 +32,8 @@ if ('development' === app.get('env')) {
 
 app.get('/', routes.index);
 app.get('/Users', user.list);
-app.get('/User/:name', user.getDevice);
-app.post('/User/:name/:device', user.addDevice);
+app.get('/User/:UserID', user.getDevice);
+app.post('/User/:UserID/:EndpointName/:EndpointID', user.addDevice);
 app.get('/ServerInfo', service.list);
 app.get('/Message/:SockType', service.sendMessage);
 app.get('/NetworkProfile/:EndpointID/:NetworkID', user.getNetworkProfile);

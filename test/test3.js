@@ -1,6 +1,7 @@
-function addDevice(s) {
+function addDevice(EndpointName, EndpointID) {
 	var fs = require('fs');
 	var devices = [];
+	var dev = {id: EndpointID, name: EndpointName};
 	
 	// interesting myth of current path 
 	try {
@@ -13,9 +14,10 @@ function addDevice(s) {
 		devices = [];
 	}
 	
-	if (devices.indexOf(s) == -1) {
+	//if (devices.indexOf(dev) == -1) {
+	if (devices.map(function(o) { return o.id; }).indexOf(dev.id) === -1) {
 		// only store unmatched devices
-		devices.push(s);
+		devices.push(dev);
 		fs.writeFile('../db/devices.json', JSON.stringify(devices));		
 	}
 	console.log(devices);
@@ -30,5 +32,5 @@ function getDevices() {
 	//});
 }
 
-//addDevice('aaa');
-getDevices();
+addDevice('b', '323423123');
+//getDevices();

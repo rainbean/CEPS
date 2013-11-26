@@ -18,19 +18,19 @@ exports.getDevice = function(req, res) {
 	var fs = require('fs');
 	
 	// version: read device list from file
-	/*
 	fs.exists('./db/devices.json', function (exists) {
 		if (!exists) {
 			return [];
 		}
 		res.sendfile('./db/devices.json');
 	});
-	*/
 	
 	// version: read device list directly from profile folder
+	/*
 	fs.readdir('../db/profile', function(err, files) {
 		res.send(files); // return filename list under profile folder 
 	});
+	*/
 };
 
 /*
@@ -39,6 +39,7 @@ exports.getDevice = function(req, res) {
 exports.addDevice = function(req, res) {
 	var fs = require('fs');
 	var devices = [];
+	var dev = {id: req.params.EndpointID, name: req.params.EndpointName};
 	
 	// interesting myth of current path 
 	try {
@@ -50,10 +51,10 @@ exports.addDevice = function(req, res) {
 		console.log(err);
 		devices = [];
 	}
-	
-	if (devices.indexOf(req.params.device) === -1) {
+
+	if (devices.map(function(o) { return o.id; }).indexOf(dev.id) === -1) {
 		// only store unmatched devices
-		devices.push(req.params.device);
+		devices.push(dev);
 		fs.writeFile('./db/devices.json', JSON.stringify(devices));
 	}
 	console.log(devices);
