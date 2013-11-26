@@ -29,12 +29,25 @@ exports.getDevice = function(req, res) {
  */
 exports.addDevice = function(req, res) {
 	var fs = require('fs');
-	var devices = JSON.parse(fs.readFileSync('./db/devices.json'));
-	if (typeof(devices) === 'undefined' || devices === null) {
+	var devices = [];
+	
+	// interesting myth of current path 
+	try {
+		if (fs.existsSync('./db/devices.json')) {
+			devices = require('../db/devices.json');
+		}
+	} catch (err) {
+		// err in parse the file, reset it
+		console.log(err);
 		devices = [];
 	}
-	devices.push(req.params.device);
-	fs.writeFile('./db/devices.json', JSON.stringify(devices));
+	
+	if (devices.indexOf(req.params.device) === -1) {
+		// only store unmatched devices
+		devices.push(req.params.device);
+		fs.writeFile('./db/devices.json', JSON.stringify(devices));
+	}
+	console.log(devices);
 	res.send(202);
 };
 
@@ -45,7 +58,7 @@ exports.addDevice = function(req, res) {
  * /v1/NetworkProfile/{EndpointID}/{NetworkID}
  */
 exports.getNetworkProfile = function(req, res) {
-	var path = './db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	var path = './db/profile/' + req.params.EndpointID;// + '_' + req.params.NetworkID;
 	res.sendfile(path);
 };
 
@@ -56,7 +69,7 @@ exports.setNetworkProfile = function(req, res) {
 	var fs = require('fs');
 
 	var profile = req.body;
-	var path = './db/profile/' + req.params.EndpointID + '_' + req.params.NetworkID;
+	var path = './db/profile/' + req.params.EndpointID;// + '_' + req.params.NetworkID;
 	fs.writeFile(path, JSON.stringify(profile));
 	res.send(202);
 };
