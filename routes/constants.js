@@ -40,3 +40,9 @@ define("STEP_LISTEN_AT",    4);
 define("STEP_SEND_TO",      5);
 define("STEP_SAVE_SESSION", 6);
 
+// commands
+define("CMD_MAP_UPNP",     'CmdMapUPnP');
+define("CMD_GET_EXT_PORT", 'CmdGetExtPort');
+define("CMD_LISTEN_MSG",   'CmdListenMsg');
+define("CMD_SEND_MSG",     'CmdSendMsg');
+define("CMD_SAVE_SESSION", 'CmdSaveSession');
