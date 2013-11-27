@@ -1,28 +1,3 @@
-
-/**
- * Convert hex string to bytes array
- */
-function toBytes(str) {
-	var bytes = new Buffer(str.length / 2);
-	for (var i = 0; i < str.length; i += 2) {
-		bytes[i/2] = parseInt(str.substr(i, 2), 16);
-	}
-	return bytes;
-}
-
-/**
- * Convert hex string to bytes array
- */
-function toString(bytes) {
-	var hex = [];
-	for (var i=0; i<bytes.length; i++) {
-		// var b = bytes[i].toString(16); // without zero padding
-		var b = ('00'+bytes[i].toString(16)).substr(-2,2); // with zero padding
-		hex.push(b);
-	}
-	return hex.join('');
-}
-
 /**
  * Handle UDP message request
  * 
@@ -33,6 +8,7 @@ function onMessage(msg, remote) {
 	var http = require('http');
 	var S = require('string');
 	var constant = require("./constants");
+	var helper = require('./helper.js');
 
 	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
 	//console.log(msg);
@@ -54,7 +30,7 @@ function onMessage(msg, remote) {
 	//var nonce = msg.toString('utf8', 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
 	var bytes = new Buffer(16);
 	msg.copy(bytes, 0, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
-	var nonce = toString(bytes);
+	var nonce = helper.toString(bytes);
 	nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
 	if (constant.REQ_GET_EXT_PORT !== cmd) {
@@ -68,7 +44,7 @@ function onMessage(msg, remote) {
 	// var eid = msg.toString('utf8', constant.LEN_MIN_CEPS_MSG, constant.LEN_REQ_GET_EXT_PORT);
 	var bytes2 = new Buffer(len);
 	msg.copy(bytes2, 0, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg eid
-	var eid = toString(bytes2);
+	var eid = helper.toString(bytes2);
 	eid = S(eid).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
 	// Make a HTTP POST request to push module	
