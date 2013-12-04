@@ -217,16 +217,13 @@ function processSessionRequest(session) {
 	case constant.STATE_PRIVATE: // in same domain
 		switch (session.Step) {
 		case constant.STEP_UNKNOWN:
-			console.log('ask for listen');
 			reply(constant.CMD_LISTEN_MSG, session, constant.STEP_SAVE_SESSION, constant.STEP_SEND_TO);
 			break;
 		case constant.STEP_SEND_TO:
-			console.log('ask to send');
 			session.res.send(202);
 			push(constant.CMD_SEND_MSG, session);
 			break;
 		case constant.STEP_SAVE_SESSION:
-			console.log('ask to save session');
 			reply(constant.CMD_SAVE_SESSION, session);
 			push(constant.CMD_SAVE_SESSION, session);
 			break;
@@ -330,6 +327,26 @@ function push(cmd, session, next, ready) {
 	default:
 		break;
 	}
-
-	session.res.send(json);
+	
+	// Make a HTTP POST request to push module
+	var jsonstr = JSON.stringify(json) ;
+	
+	var options = {
+			hostname: 'ceps.cloudapp.net', // ToDo: change to real push module FQDN
+			port: 80,
+			path: '/pub?id=' + session.Dnp.ID,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': jsonstr.length
+			}
+		};
+	
+	var req = http.request(options);
+	
+	req.on('error', function(e) {
+		console.log('problem with request: ' + e.message);
+	});
+	req.write(jsonstr); // write data to request body
+	req.end();
 }
