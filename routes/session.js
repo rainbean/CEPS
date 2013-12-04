@@ -97,7 +97,7 @@ exports.match = function(req, res) {
 	var fs = require('fs');
 	var helper = require('./helper.js');
 	var constant = require("./constants");
-	var session = {State: req.params.State, Step: constant.STEP_UNKNOWN,
+	var session = {State: parseInt(req.params.State), Step: constant.STEP_UNKNOWN,
 			Rnp: {}, Dnp: {}, Nonce: '', req: req, res: res};
 
 	if (req.params.SocketType !== 'UDP' ||
@@ -124,7 +124,7 @@ exports.match = function(req, res) {
 		// decide state machine model
 		getNextSessionState(session);
 	} else {
-		session.Step = req.query.Next;
+		session.Step = parseInt(req.query.Next);
 		session.Nonce = req.query.Nonce;
 	}
 
