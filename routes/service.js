@@ -145,6 +145,7 @@ exports.list = function(req, res) {
  */
 exports.sendMessage = function(req, res) {
 	var constant = require("./constants");
+	var helper = require('./helper');
 	
 	// check required parameters
 	if (req.query.DestPort === null || req.query.DestIP === null ||
@@ -161,7 +162,8 @@ exports.sendMessage = function(req, res) {
 		udp.writeUInt8(1, 4); // version
 		udp.writeUInt16BE(constant.REP_SEND_MSG, 5); // msg type
 		udp.writeUInt16BE(0x0000, 7); // msg length
-		udp.write(req.query.Nonce, 9, 16); // msg nonce
+		var nonceBytes = helper.toBytes(req.query.Nonce);
+		nonceBytes.copy(udp, 9);
 		
 		// return status code before execute UDP message
 		res.send(202);
