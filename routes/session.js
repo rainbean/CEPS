@@ -217,13 +217,16 @@ function processSessionRequest(session) {
 	case constant.STATE_PRIVATE: // in same domain
 		switch (session.Step) {
 		case constant.STEP_UNKNOWN:
-			reply(constant.CMD_LISTEN_MSG, session, constant.STEP_SEND_TO, constant.STEP_SAVE_SESSION);
+			console.log('ask for listen');
+			reply(constant.CMD_LISTEN_MSG, session, constant.STEP_SAVE_SESSION, constant.STEP_SEND_TO);
 			break;
 		case constant.STEP_SEND_TO:
+			console.log('ask to send');
 			session.res.send(202);
 			push(constant.CMD_SEND_MSG, session);
 			break;
 		case constant.STEP_SAVE_SESSION:
+			console.log('ask to save session');
 			reply(constant.CMD_SAVE_SESSION, session);
 			push(constant.CMD_SAVE_SESSION, session);
 			break;
