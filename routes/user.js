@@ -71,7 +71,7 @@ exports.addDevice = function(req, res) {
  * /v1/NetworkProfile/{EndpointID}/{NetworkID}
  */
 exports.getNetworkProfile = function(req, res) {
-	var path = './db/profile/' + req.params.EndpointID;// + '_' + req.params.NetworkID;
+	var path = './db/profile/' + req.params.EndpointID + '.json';
 	res.sendfile(path);
 };
 
@@ -83,7 +83,7 @@ exports.setNetworkProfile = function(req, res) {
 
 	fs.mkdir('./db/profile', function(err) {
 		var profile = req.body;
-		var path = './db/profile/' + req.params.EndpointID;// + '_' + req.params.NetworkID;
+		var path = './db/profile/' + req.params.EndpointID + '.json';
 		fs.writeFile(path, JSON.stringify(profile));
 		res.send(202);
 	});

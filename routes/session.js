@@ -1,3 +1,22 @@
+
+/**
+ * Get network profile from database
+ * @param eid endpoint id
+ * @return json object or null
+ */
+function getNetworkProfile(eid) {
+	var fs = require('fs');
+	
+	// check existance of endpoint network profile
+	if (!fs.existsSync('./db/profile/' + eid + '.json')) {
+		return null;
+	} else {
+		var json = require('../db/profile/' + eid + '.json');
+		json.ID = eid;
+		return json;
+	}
+}
+
 /**
  * Request Connection to Peer Endpoint. 
  * 
@@ -21,32 +40,28 @@
  */
 
 exports.init = function(req, res) {
-	var fs = require('fs');
 	var helper = require('./helper.js');
 	var constant = require("./constants");
-	var session = {State: req.params.State, Step: constant.STEP_UNKNOWN,
+	
+	var session = {State: constant.STATE_UNKNOWN, Step: constant.STEP_UNKNOWN,
 			Rnp: {}, Dnp: {}, Nonce: '', req: req, res: res};
 	
-	if (req.params.SrcEndpointID !== 'UDP' ||
+	if (req.params.SocketType !== 'UDP' ||
 		!req.params.SrcEndpointID || !req.params.DestEndpointID) {
 		return res.send(400); // invalid request
 	}
 	
-	// check existance of endpoint network profile
-	if (!fs.existsSync('./db/profile/' + req.params.DestEndpointID)) {
+	// check existance of DestEndpointID network profile
+	session.Dnp = getNetworkProfile(req.params.DestEndpointID);
+	if (!session.Dnp) {
 		// ToDo: implement 404 body to support regional center
 		return res.send(404);
-	} else {
-		session.Dnp = require('../db/profile/' + req.params.DestEndpointID);
-		session.Dnp.ID = req.params.DestEndpointID;
 	}
 
-	// check existance of endpoint network profile
-	if (!fs.existsSync('./db/profile/' + req.params.SrcEndpointID)) {
+	// check existance of SrcEndpointID network profile
+	session.Rnp = getNetworkProfile(req.params.SrcEndpointID);
+	if (!session.Rnp) {
 		return res.send(401); // invalid endpoint
-	} else {
-		session.Rnp = require('../db/profile/' + req.params.SrcEndpointID);
-		session.Rnp.ID = req.params.SrcEndpointID;
 	}
 	
 	// generate random session nonce
@@ -85,26 +100,22 @@ exports.match = function(req, res) {
 	var session = {State: req.params.State, Step: constant.STEP_UNKNOWN,
 			Rnp: {}, Dnp: {}, Nonce: '', req: req, res: res};
 
-	if (req.params.SrcEndpointID !== 'UDP' ||
+	if (req.params.SocketType !== 'UDP' ||
 		!req.params.SrcEndpointID || !req.params.DestEndpointID) {
 		return res.send(400); // invalid request
 	}
 	
-	// check existance of endpoint network profile
-	if (!fs.existsSync('./db/profile/' + req.params.DestEndpointID)) {
+	// check existance of DestEndpointID network profile
+	session.Dnp = getNetworkProfile(req.params.DestEndpointID);
+	if (!session.Dnp) {
 		// ToDo: implement 404 body to support regional center
 		return res.send(404);
-	} else {
-		session.Dnp = require('../db/profile/' + req.params.DestEndpointID);
-		session.Dnp.ID = req.params.DestEndpointID;
 	}
 
-	// check existance of endpoint network profile
-	if (!fs.existsSync('./db/profile/' + req.params.SrcEndpointID)) {
+	// check existance of SrcEndpointID network profile
+	session.Rnp = getNetworkProfile(req.params.SrcEndpointID);
+	if (!session.Rnp) {
 		return res.send(401); // invalid endpoint
-	} else {
-		session.Rnp = require('../db/profile/' + req.params.SrcEndpointID);
-		session.Rnp.ID = req.params.SrcEndpointID;
 	}
 	
 	// check whether it's failed case in previous round
