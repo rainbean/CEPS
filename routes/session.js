@@ -259,7 +259,7 @@ function reply(cmd, session, next, ready) {
 
 	if (next) {
 		json.Reply = {};
-		var url = '/cms/InMatch/UDP/' + session.State + '/' + session.Rnp.ID + '/' + session.Dnp.ID;
+		var url = '/InMatch/UDP/' + session.State + '/' + session.Rnp.ID + '/' + session.Dnp.ID;
 		var query = [
 			'Nonce=' + session.Nonce,
 			'LocalPort=' + session.Rnp.Location.LocalUDPPort

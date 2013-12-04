@@ -8,8 +8,9 @@ function define(name, value) {
 	});
 }
 
-define("CEPS_MAGIC_CODE", 0x43455053);
-define("LEN_MIN_CEPS_MSG", 25);
+//UDP message definition
+define("CEPS_MAGIC_CODE", 0x43455053); // magic code
+define("LEN_MIN_CEPS_MSG", 25);        // minimum message length
 
 define("REQ_SEND_MSG", 0x0004);
 define("LEN_REQ_SEND_MSG", 25);
@@ -46,3 +47,4 @@ define("CMD_GET_EXT_PORT", 'CmdGetExtPort');
 define("CMD_LISTEN_MSG",   'CmdListenMsg');
 define("CMD_SEND_MSG",     'CmdSendMsg');
 define("CMD_SAVE_SESSION", 'CmdSaveSession');
+define("CMD_ACK_EXT_PRT",  'RepGetExtPort');

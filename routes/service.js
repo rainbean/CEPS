@@ -1,3 +1,48 @@
+
+/**
+ * UDP message handler
+ * 
+ * @param msg Received UDP message in JSON 
+ * @return true if message handled, false for next handler
+ */
+function onMessageHandler(msg) {
+	var http = require('http');
+	var S = require('string');
+	var constant = require("./constants");
+	var helper = require('./helper.js');
+
+	if (constant.REQ_GET_EXT_PORT !== msg.Type) {
+		return false; // unsupported command
+	}
+
+	var eid = helper.toString(msg.Data);
+	eid = S(eid).replaceAll('\u0000', '').trim().s; // remove null or white space
+	
+	// Make a HTTP POST request to push module
+	var json = {Version: 1, Type: constant.CMD_ACK_EXT_PRT, Nonce: msg.Nonce, Port: msg.Remote.port};
+	var jsonstr = JSON.stringify(json) ;
+	
+	var options = {
+			hostname: 'ceps.cloudapp.net', // ToDo: change to real push module FQDN
+			port: 80,
+			path: '/pub?id=' + eid,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Length': jsonstr.length
+			}
+		};
+	
+	var req = http.request(options);
+	
+	req.on('error', function(e) {
+		console.log('problem with request: ' + e.message);
+	});
+	req.write(jsonstr); // write data to request body
+	req.end();
+	return true;
+}
+
 /**
  * Handle UDP message request
  * 
@@ -5,13 +50,13 @@
  * @param remote Remote peer address 
  */
 function onMessage(msg, remote) {
-	var http = require('http');
 	var S = require('string');
 	var constant = require("./constants");
 	var helper = require('./helper.js');
 
+	var json = {Remote: remote};
+
 	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
-	//console.log(msg);
     
 	if (msg.length < constant.LEN_MIN_CEPS_MSG) {
 		return; // drop message silently
@@ -24,53 +69,23 @@ function onMessage(msg, remote) {
 		return; // verify version
 	}
 	
-	var cmd = msg.readUInt16BE(5); // msg type
-	var len = msg.readUInt16BE(7); // msg length
+	json.Type = msg.readUInt16BE(5); // msg type
+	var len = msg.readUInt16BE(7); // data length
 	
-	//var nonce = msg.toString('utf8', 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
-	var bytes = new Buffer(16);
-	msg.copy(bytes, 0, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
-	var nonce = helper.toString(bytes);
-	nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
+	var buf = new Buffer(16);
+	msg.copy(buf, 0, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	var nonce = helper.toString(buf);
+	json.Nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
-	if (constant.REQ_GET_EXT_PORT !== cmd) {
-		return; // unsupported command
+	if (len > 0) {
+		json.Data = new Buffer(len);
+		msg.copy(json.Data, 0, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg data
 	}
-
-	if (len !== 16) {
-		return; // invalid data length
-	}
-
-	// var eid = msg.toString('utf8', constant.LEN_MIN_CEPS_MSG, constant.LEN_REQ_GET_EXT_PORT);
-	var bytes2 = new Buffer(len);
-	msg.copy(bytes2, 0, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg eid
-	var eid = helper.toString(bytes2);
-	eid = S(eid).replaceAll('\u0000', '').trim().s; // remove null or white space
 	
-	// Make a HTTP POST request to push module	
-	var data = {Version: 1, Type: "RepGetExtPort", Nonce: nonce, Port: remote.port};
-	var datastr = JSON.stringify(data) ;
-	//console.log(datastr);
-	
-	var options = {
-			hostname: 'ceps.cloudapp.net', // ToDo: change to real push module FQDN
-			port: 80,
-			path: '/pub?id=' + eid,
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Content-Length': datastr.length
-			}
-		};
-	
-	var req = http.request(options);
-	
-	req.on('error', function(e) {
-		console.log('problem with request: ' + e.message);
-	});
-	req.write(datastr); // write data to request body
-	req.end();
+	// call handlers
+	onMessageHandler(json);
 }
+
 
 /**
  * Create UDP daemon to listen for UDP request 
