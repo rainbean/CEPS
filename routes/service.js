@@ -128,7 +128,7 @@ exports.list = function(req, res) {
 	var services = {
 		Version: 1,
 		Type: 'ServerInfo',
-		cms:[ {Host: helper.config.server.address, Port: [helper.config.server.port]}, 
+		cms:[ {Host: helper.config.server.address, Port: [helper.config.server.udp]}, 
 		      {Host: "ceps2.cloudapp.net", Port: [23400]}],
 		requestor: {IP: client_ip}
 	};
