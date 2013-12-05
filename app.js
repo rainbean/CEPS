@@ -31,6 +31,15 @@ if ('development' === app.get('env')) {
   app.use(express.errorHandler());
 }
 
+var helper = require("./routes/helper");
+helper.getConfig();
+
+// check server setting
+if (!helper.config.server) {
+	console.log('Invalid server config, please modify config.json!!!');
+	process.exit(1);
+}
+
 app.get('/', routes.index);
 app.get('/Users', user.list);
 app.get('/User/:UserID', user.getDevice);

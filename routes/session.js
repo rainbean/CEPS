@@ -40,7 +40,7 @@ function getNetworkProfile(eid) {
  */
 
 exports.init = function(req, res) {
-	var helper = require('./helper.js');
+	var helper = require('./helper');
 	var constant = require("./constants");
 	
 	var session = {State: constant.STATE_UNKNOWN, Step: constant.STEP_UNKNOWN,
@@ -95,7 +95,7 @@ exports.init = function(req, res) {
 
 exports.match = function(req, res) {
 	var fs = require('fs');
-	var helper = require('./helper.js');
+	var helper = require('./helper');
 	var constant = require("./constants");
 	var session = {State: parseInt(req.params.State), Step: constant.STEP_UNKNOWN,
 			Rnp: {}, Dnp: {}, Nonce: '', req: req, res: res};
@@ -306,7 +306,8 @@ function reply(cmd, session, next, ready) {
 
 function push(cmd, session, next, ready) {
 	var http = require('http');
-	var constant = require("./constants");
+	var constant = require('./constants');
+	var helper = require('./helper');
 
 	var json = {Version:1, Type:cmd, SocketType:'UDP', Nonce:session.Nonce};
 
@@ -332,9 +333,9 @@ function push(cmd, session, next, ready) {
 	var jsonstr = JSON.stringify(json) ;
 	
 	var options = {
-			hostname: 'ceps.cloudapp.net', // ToDo: change to real push module FQDN
-			port: 80,
-			path: '/pub?id=' + session.Dnp.ID,
+			hostname: helper.config.server.address,
+			port: helper.config.server.port,
+			path: helper.config.server.push + session.Dnp.ID,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

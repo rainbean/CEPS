@@ -9,7 +9,7 @@ function onMessageHandler(msg) {
 	var http = require('http');
 	var S = require('string');
 	var constant = require("./constants");
-	var helper = require('./helper.js');
+	var helper = require('./helper');
 
 	if (constant.REQ_GET_EXT_PORT !== msg.Type) {
 		return false; // unsupported command
@@ -23,9 +23,9 @@ function onMessageHandler(msg) {
 	var jsonstr = JSON.stringify(json) ;
 	
 	var options = {
-			hostname: 'ceps.cloudapp.net', // ToDo: change to real push module FQDN
-			port: 80,
-			path: '/pub?id=' + eid,
+			hostname: helper.config.server.address,
+			port: helper.config.server.port,
+			path: helper.config.server.push + eid,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ function onMessageHandler(msg) {
 function onMessage(msg, remote) {
 	var S = require('string');
 	var constant = require("./constants");
-	var helper = require('./helper.js');
+	var helper = require('./helper');
 
 	var json = {Remote: remote};
 
@@ -93,16 +93,21 @@ function onMessage(msg, remote) {
 exports.listen = function() {
 	var dgram = require('dgram');
 	var udpd = dgram.createSocket('udp4');
+	var helper = require('./helper');
 	
 	udpd.on('listening', function () {
 		var address = udpd.address();
 		console.log('UDP Server listening on ' + address.address + ":" + address.port);
+		if (address.port != helper.config.server.udp) {
+			console.log('Failed to listen at configured UDP port, please modify config.json!!!');
+			process.exit(1);
+		}
 	});
 	
 	udpd.on('message', onMessage);
 
 	// udpd.bind(23400, '127.0.0.1'); // bind loopback interface
-	udpd.bind(23400); // bind all interface
+	udpd.bind(helper.config.server.udp); // bind all interface
 };
 
 
@@ -124,7 +129,8 @@ exports.list = function(req, res) {
 	var services = {
 		Version: 1,
 		Type: 'ServerInfo',
-		cms:[ {Host: "ceps.cloudapp.net", Port: [23400]}, {Host: "ceps2.cloudapp.net", Port: [23400]}],
+		cms:[ {Host: helper.config.server.address, Port: [helper.config.server.port]}, 
+		      {Host: "ceps2.cloudapp.net", Port: [23400]}],
 		requestor: {IP: client_ip}
 	};
 	res.send(services);

@@ -36,3 +36,27 @@ exports.toString = function(bytes) {
 	}
 	return hex.join('');
 };
+
+//configuration store
+exports.config = {};
+
+/**
+ * Read configuration from file
+ */
+exports.getConfig = function () {
+	var fs = require('fs');
+	
+	// interesting myth of current path 
+	if (fs.existsSync('./config.json')) {
+		module.exports.config = require('../config.json');
+	}
+};
+
+/**
+ * Write configuration to file
+ */
+exports.setConfig = function () {
+	var fs = require('fs');
+	
+	fs.writeFile('./config.json', JSON.stringify(module.exports.config,null,2)); // make json file pretty
+};
