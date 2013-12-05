@@ -117,10 +117,9 @@ exports.listen = function() {
  * GET /v1/ServerInfo
  */
 exports.list = function(req, res) {
+	var helper = require('./helper');
+	
 	var client_ip;
-	//console.log(req.headers);
-	//console.log(req.headers['x-nginx-proxy']);
-	//console.log(req.headers['x-real-ip']);
 	if (req.headers['x-nginx-proxy']) {
 		client_ip = req.headers['x-real-ip'];
 	} else {
