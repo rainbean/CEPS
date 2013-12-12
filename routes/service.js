@@ -159,38 +159,21 @@ exports.sendMessage = function(req, res) {
 	}
 	
 	if (req.params.SockType === 'UDP') {
-		var dgram = require('dgram');
-		var udp = new Buffer(constant.LEN_REP_SEND_MSG);
-		
-		udp.fill(0x00); // clear with zero 
-		udp.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
-		udp.writeUInt8(1, 4); // version
-		udp.writeUInt16BE(constant.REP_SEND_MSG, 5); // msg type
-		udp.writeUInt16BE(0x0000, 7); // msg length
-		var nonceBytes = helper.toBytes(req.query.Nonce);
-		nonceBytes.copy(udp, 9);
-		
+		var msg = {
+				Type: constant.REP_SEND_MSG,
+				LocalPort: req.query.SrcPort,
+				Destination: {
+					IP: req.query.DestIP,
+					Port: req.query.DestPort
+				},
+				Nonce: req.query.Nonce,
+				Count: req.query.Count
+			};
+		//console.log(msg);
+
 		// return status code before execute UDP message
 		res.send(202);
-		
-		var client = dgram.createSocket("udp4");
-		client.bind(req.query.SrcPort, function() {
-			var count = req.query.Count;
-			if (typeof(count) === 'undefined' || count === null ||
-					count <= 0 || count >= 20) {
-				count = 1; // reset to once
-			}
-			
-			var done = count;
-			for (var i=0; i<count; ++i) {
-				client.send(udp, 0, udp.length, req.query.DestPort, req.query.DestIP, function(err, bytes) {
-					done --;
-					if (done === 0) {
-						client.close();
-					}
-				});
-			}
-		});
+		helper.sendCepsUdpMsg(msg);
 	} else if (req.params.SockType === 'TCP') {
 		/**
 		 * ToDo: implement TCP

@@ -60,3 +60,54 @@ exports.setConfig = function () {
 	
 	fs.writeFile('./config.json', JSON.stringify(module.exports.config,null,2)); // make json file pretty
 };
+
+
+/**
+ * Send CEPS message to specific address and port from specific local port, N times continuously
+ *  
+ * @param msg a json object, syntax: {Type:1, LocalPort:8080, Destination: {IP: "140.1.1.1", Port: 38080}, Nonce:"Rose", Count: 5 }
+ */
+exports.sendCepsUdpMsg = function(msg) {
+	var dgram = require('dgram');
+	var constant = require("./constants");
+
+	var udp = new Buffer(constant.LEN_MIN_CEPS_MSG);
+
+	var textBytes = null;
+	if (msg.Text) {
+		textBytes = module.exports.toBytes(msg.Text);
+	}
+	
+	udp.fill(0x00); // clear with zero 
+	udp.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
+	udp.writeUInt8(1, 4); // version
+	udp.writeUInt16BE(msg.Type, 5); // msg type
+	if (textBytes) {
+		udp.writeUInt16BE(textBytes.length, 7);
+	}
+	var nonceBytes = module.exports.toBytes(msg.Nonce);
+	nonceBytes.copy(udp, 9);
+	if (textBytes) {
+		udp = Buffer.concat([udp, textBytes]); // concat textBytes to end of udp array
+	}
+
+	var client = dgram.createSocket("udp4");
+	client.bind(msg.LocalPort, function() {
+		var count = msg.Count;
+		if (typeof(count) === 'undefined' || count === null ||
+				count <= 0 || count >= 20) {
+			count = 1; // reset to once
+		}
+		
+		var done = count;
+		for (var i=0; i<count; ++i) {
+			client.send(udp, 0, udp.length, msg.Destination.Port, msg.Destination.IP, function(err, bytes) {
+				done --;
+				console.log('Send out udp message: err = ' + err + ', bytes = ' +  bytes);
+				if (done === 0) {
+					client.close();
+				}
+			});
+		}
+	});
+};
