@@ -73,22 +73,22 @@ exports.sendCepsUdpMsg = function(msg) {
 
 	var udp = new Buffer(constant.LEN_MIN_CEPS_MSG);
 
-	var textBytes = null;
-	if (msg.Text) {
-		textBytes = module.exports.toBytes(msg.Text);
+	var dataBytes = null;
+	if (msg.Data) {
+		dataBytes = module.exports.toBytes(msg.Data);
 	}
 	
 	udp.fill(0x00); // clear with zero 
 	udp.writeUInt32BE(constant.CEPS_MAGIC_CODE, 0);  // magic code
 	udp.writeUInt8(1, 4); // version
 	udp.writeUInt16BE(msg.Type, 5); // msg type
-	if (textBytes) {
-		udp.writeUInt16BE(textBytes.length, 7);
+	if (dataBytes) {
+		udp.writeUInt16BE(dataBytes.length, 7);
 	}
 	var nonceBytes = module.exports.toBytes(msg.Nonce);
 	nonceBytes.copy(udp, 9);
-	if (textBytes) {
-		udp = Buffer.concat([udp, textBytes]); // concat textBytes to end of udp array
+	if (dataBytes) {
+		udp = Buffer.concat([udp, dataBytes]); // concat dataBytes to end of udp array
 	}
 
 	var client = dgram.createSocket("udp4");
