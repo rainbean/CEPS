@@ -73,7 +73,7 @@ exports.sendCepsUdpMsg = function(msg) {
 
 	var udp = new Buffer(constant.LEN_MIN_CEPS_MSG);
 
-	if (msg.Data && typeof msg.Data !== Buffer) {
+	if (msg.Data && !Buffer.isBuffer(msg.Data)) {
 		throw new Error('Data shall be Buffer type');
 	}
 	
