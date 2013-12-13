@@ -144,19 +144,19 @@ function getNextSessionState(session) {
 	if (session.Rnp.UDP.Blocked || session.Dnp.UDP.Blocked) {
 		session.State = constant.STATE_UNKNOWN;
 	} else if (session.State < constant.STATE_PRIVATE &&
-			session.Dnp.Location.ExtIP == session.Rnp.Location.ExtIP) {
+			session.Dnp.Location.ExtIP === session.Rnp.Location.ExtIP) {
 		session.State = constant.STATE_PRIVATE;
 	} else if (session.State < constant.STATE_PUBLIC_REQ &&
-			session.Rnp.UDP.Public == true) {
+			session.Rnp.UDP.Public === true) {
 		session.State = constant.STATE_PUBLIC_REQ;
 	} else if (session.State < constant.STATE_PUBLIC_DEST &&
-			session.Dnp.UDP.Public == true) {
+			session.Dnp.UDP.Public === true) {
 		session.State = constant.STATE_PUBLIC_DEST;
 	} else if (session.State < constant.STATE_UPNP_REQ &&
-			session.Rnp.UDP.UPnP.Enabled == true) {
+			session.Rnp.UDP.UPnP.Enabled === true) {
 		session.State = constant.STATE_UPNP_REQ;
 	} else if (session.State < constant.STATE_UPNP_DEST &&
-			session.Dnp.UDP.UPnP.Enabled == true) {
+			session.Dnp.UDP.UPnP.Enabled === true) {
 		session.State = constant.STATE_UPNP_DEST;
 	} else if (session.State < constant.STATE_PUNCH_DEST) {
 		// else try hole punch or relay
@@ -333,9 +333,9 @@ function push(cmd, session, next, ready) {
 	var jsonstr = JSON.stringify(json) ;
 	
 	var options = {
-			hostname: helper.config.server.address,
-			port: helper.config.server.port,
-			path: helper.config.server.push + session.Dnp.ID,
+			hostname: helper.config.server[0].address,
+			port: helper.config.server[0].port,
+			path: helper.config.server[0].push + session.Dnp.ID,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

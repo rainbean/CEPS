@@ -23,9 +23,9 @@ function onMessageHandler(msg) {
 	var jsonstr = JSON.stringify(json) ;
 	
 	var options = {
-			hostname: helper.config.server.address,
-			port: helper.config.server.port,
-			path: helper.config.server.push + eid,
+			hostname: helper.config.server[0].address,
+			port: helper.config.server[0].port,
+			path: helper.config.server[0].push + eid,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -86,19 +86,14 @@ function onMessage(msg, remote) {
 	onMessageHandler(json);
 }
 
-
-/**
- * Create UDP daemon to listen for UDP request 
- */
-exports.listen = function() {
+function createUDPD(port) {
 	var dgram = require('dgram');
 	var udpd = dgram.createSocket('udp4');
-	var helper = require('./helper');
-	
+
 	udpd.on('listening', function () {
 		var address = udpd.address();
 		console.log('UDP Server listening on ' + address.address + ":" + address.port);
-		if (address.port != helper.config.server.udp) {
+		if (address.port !== port) {
 			console.log('Failed to listen at configured UDP port, please modify config.json!!!');
 			process.exit(1);
 		}
@@ -107,7 +102,19 @@ exports.listen = function() {
 	udpd.on('message', onMessage);
 
 	// udpd.bind(23400, '127.0.0.1'); // bind loopback interface
-	udpd.bind(helper.config.server.udp); // bind all interface
+	udpd.bind(port); // bind all interface
+}
+
+/**
+ * Create UDP daemon to listen for UDP request 
+ */
+exports.listen = function() {
+	var helper = require('./helper');
+	
+	for (var i = 0; i < helper.config.server[0].udp.length; i++) {
+		var port = helper.config.server[0].udp[i];
+		createUDPD(port);
+	}
 };
 
 
@@ -128,8 +135,7 @@ exports.list = function(req, res) {
 	var services = {
 		Version: 1,
 		Type: 'ServerInfo',
-		cms:[ {Host: helper.config.server.address, Port: [helper.config.server.udp]}, 
-		      {Host: "ceps2.cloudapp.net", Port: [23400]}],
+		server: helper.config.server,
 		requestor: {IP: client_ip}
 	};
 	res.send(services);

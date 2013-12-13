@@ -1,10 +1,26 @@
 {
-  "server": {
-    "address": "ceps.cloudapp.net",
-    "port":80,
-    "udp":23400,
-    "cms": "/cms",
-    "push": "/pub?id=",
-    "sub": "/sub"
-  }
+  "server": [
+    {
+      "address": "ceps.cloudapp.net",
+      "port": 80,
+      "udp": [
+        23400,
+        23500
+      ],
+      "cms": "/cms",
+      "push": "/pub?id=",
+      "sub": "/sub"
+    },
+    {
+      "address": "ceps2.cloudapp.net",
+      "port": 80,
+      "udp": [
+        23400,
+        23500
+      ],
+      "cms": "/cms",
+      "push": "/pub?id=",
+      "sub": "/sub"
+    }
+  ]
 }
