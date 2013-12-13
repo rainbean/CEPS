@@ -54,34 +54,14 @@ function onMessage(msg, remote) {
 	var constant = require("./constants");
 	var helper = require('./helper');
 
-	var json = {Remote: remote};
-
 	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
-    
-	if (msg.length < constant.LEN_MIN_CEPS_MSG) {
-		return; // drop message silently
+	// {Type:1, Data: [], Nonce:"Rose"}
+	var json = helper.getCepsUdpMsg(msg);
+	if (!json) {
+		return; // invalid message
 	}
-    
-	if (constant.CEPS_MAGIC_CODE !== msg.readUInt32BE(0)) {
-		return; // invalid magic code
-	}
-	if (1 !== msg.readUInt8(4)) {
-		return; // verify version
-	}
-	
-	json.Type = msg.readUInt16BE(5); // msg type
-	var len = msg.readUInt16BE(7); // data length
-	
-	var buf = new Buffer(16);
-	msg.copy(buf, 0, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
-	var nonce = helper.toString(buf);
-	json.Nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
-	
-	if (len > 0) {
-		json.Data = new Buffer(len);
-		msg.copy(json.Data, 0, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg data
-	}
-	
+	json.Remote = remote;
+
 	// call handlers
 	onMessageHandler(json);
 }

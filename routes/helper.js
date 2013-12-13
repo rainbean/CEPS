@@ -61,6 +61,45 @@ exports.setConfig = function () {
 	fs.writeFile('./config.json', JSON.stringify(module.exports.config,null,2)); // make json file pretty
 };
 
+/**
+ * Parse CEPS UDP message
+ * @param msg UDP Buffer array
+ * @param msg a json object, syntax: {Type:1, Data: [], Nonce:"Rose"}
+ */
+exports.getCepsUdpMsg = function(msg) {
+	var S = require('string');
+	var constant = require("./constants");
+	var helper = require('./helper.js');
+
+	var json = {};
+
+	if (msg.length < constant.LEN_MIN_CEPS_MSG) {
+		return; // drop message silently
+	}
+
+	if (constant.CEPS_MAGIC_CODE !== msg.readUInt32BE(0)) {
+		return; // invalid magic code
+	}
+
+	if (1 !== msg.readUInt8(4)) {
+		return; // verify version
+	}
+	
+	json.Type = msg.readUInt16BE(5); // msg type
+	var len = msg.readUInt16BE(7); // data length
+	
+	var buf = new Buffer(16);
+	msg.copy(buf, 0, 9, constant.LEN_MIN_CEPS_MSG); // msg nonce
+	var nonce = helper.toString(buf);
+	json.Nonce = S(nonce).replaceAll('\u0000', '').trim().s; // remove null or white space
+	
+	if (len > 0 && len < 1024) { // avoid buffer overflow accident
+		json.Data = new Buffer(len);
+		msg.copy(json.Data, 0, constant.LEN_MIN_CEPS_MSG, constant.LEN_MIN_CEPS_MSG+len); // msg data
+	}
+
+	return json;
+};
 
 /**
  * Send CEPS message to specific address and port from specific local port, N times continuously
