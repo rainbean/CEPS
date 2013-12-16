@@ -33,8 +33,16 @@ function onMessageHandler(msg) {
 			}
 		};
 	
-	var req = http.request(options);
-	
+	var req = http.request(options, function(res) {
+		res.setEncoding('utf8');
+		if (res.statusCode !== 200) {
+			console.log('Nginx return error:' + res.statusCode);
+		}
+		res.on('data', function (data) {
+			console.log('Nginx return: ' + data);
+		}); // always consume data trunk
+	});
+
 	req.on('error', function(e) {
 		console.log('problem with request: ' + e.message);
 	});
