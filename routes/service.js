@@ -1,4 +1,6 @@
 
+var _expiredNonce = []; // when nonce was processed and will be discard for n seconds
+
 /**
  * UDP message handler
  * 
@@ -13,6 +15,20 @@ function onMessageHandler(msg) {
 
 	if (constant.REQ_GET_EXT_PORT !== msg.Type) {
 		return false; // unsupported command
+	}
+	
+	if (_expiredNonce.indexOf(msg.Nonce) !== -1) {
+		// found expired nonce, discard this request
+		console.log('Ignore duplicated nonce request: ' + msg.Nonce);
+	} else {
+		_expiredNonce.push(msg.Nonce);
+		setTimeout(function(nonce) {
+			// remove nonce from expired queue
+			var i = _expiredNonce.indexOf(nonce);
+			if (i !== -1) {
+				_expiredNonce.splice(i, 1);
+			}
+		}, 20*1000, msg.Nonce); // queue as expired for 20 seconds
 	}
 
 	var eid = helper.toString(msg.Data);
