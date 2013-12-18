@@ -211,21 +211,30 @@ function getNextSessionState(session) {
  * @param res HTTP response 
  */
 function processSessionRequest(session) {
-	var constant = require("./constants");
+	var _ = require("./constants");
+	var clientIP;	
+	if (session.req.headers['x-nginx-proxy']) {
+		clientIP = session.req.headers['x-real-ip'];
+	} else {
+		clientIP = session.req.ip;
+	}
 
 	switch (session.State) {
-	case constant.STATE_PRIVATE: // in same domain
+	case _.STATE_PRIVATE: // in same domain
 		switch (session.Step) {
-		case constant.STEP_UNKNOWN:
-			reply(constant.CMD_LISTEN_MSG, session, constant.STEP_SAVE_SESSION, constant.STEP_SEND_TO);
+		case _.STEP_UNKNOWN:
+			replyRnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
 			break;
-		case constant.STEP_SEND_TO:
+		case _.STEP_SEND_TO:
 			session.res.send(202);
-			push(constant.CMD_SEND_MSG, session);
+			session.Dest = {IP:session.Rnp.Location.LocalIP, Port:session.Rnp.Location.LocalUDPPort};
+			pushDnp(_.CMD_SEND_MSG, session);
 			break;
-		case constant.STEP_SAVE_SESSION:
-			reply(constant.CMD_SAVE_SESSION, session);
-			push(constant.CMD_SAVE_SESSION, session);
+		case _.STEP_SAVE_SESSION:
+			session.Dest = {IP:session.Dnp.Location.LocalIP, Port:session.Dnp.Location.LocalUDPPort};
+			replyRnp(_.CMD_SAVE_SESSION, session);
+			session.Dest = {IP:session.Rnp.Location.LocalIP, Port:session.Rnp.Location.LocalUDPPort};
+			pushDnp(_.CMD_SAVE_SESSION, session);
 			break;
 		default: // error
 			console.log('unknown state:' + session.State + ', step:' + session.Step);
@@ -233,28 +242,62 @@ function processSessionRequest(session) {
 			break;
 		}
 		break;
-	case constant.STATE_PUBLIC_REQ: // Requester public accessible
+	case _.STATE_PUBLIC_REQ: // Requester public accessible
 		session.res.send(403, 'STATE_PUBLIC_REQ not supported yet'); // ToDo: implement later
 		break;
-	case constant.STATE_PUBLIC_DEST: // Destination public accessible
+	case _.STATE_PUBLIC_DEST: // Destination public accessible
 		session.res.send(403, 'STATE_PUBLIC_DEST not supported yet'); // ToDo: implement later
 		break;
-	case constant.STATE_UPNP_REQ: // Requester UPnP
+	case _.STATE_UPNP_REQ: // Requester UPnP
 		session.res.send(403, 'STATE_UPNP_REQ not supported yet'); // ToDo: implement later
 		break;
-	case constant.STATE_UPNP_DEST: // Destination UPnP
+	case _.STATE_UPNP_DEST: // Destination UPnP
 		session.res.send(403, 'STATE_UPNP_DEST not supported yet'); // ToDo: implement later
 		break;
-	case constant.STATE_PUNCH_REQ: // Favor Requestor side
-		session.res.send(403, 'STATE_PUNCH_REQ not supported yet'); // ToDo: implement later
+	case _.STATE_PUNCH_REQ: // Favor Requestor side
+		if (session.req.query.RepExtPort) {
+			session.Piggyback = "&ReqExtPort=" + session.req.query.RepExtPort; // RepExtPort piggyback
+		}
+		switch (session.Step) {
+		case _.STEP_UNKNOWN:
+			replyRnp(_.CMD_GET_EXT_PORT, session, _.STEP_EXT_PORT);
+			break;
+		case _.STEP_EXT_PORT:
+			session.Piggyback = "&ReqExtPort=" + session.req.query.ExtPort; // ExtPort is requestor's reply 
+			session.res.send(202);
+			pushDnp(_.CMD_GET_EXT_PORT, session, _.STEP_PUNCH);
+			break;
+		case _.STEP_PUNCH:
+			session.res.send(202);
+			session.Dest = {IP:clientIP, Port:session.req.query.ExtPort};
+			pushRnp(_.CMD_SEND_MSG, session, _.STEP_LISTEN_AT);
+			break;
+		case _.STEP_LISTEN_AT:
+			replyRnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
+			break;
+		case _.STEP_SEND_TO:
+			session.Dest = {IP:clientIP, Port:session.req.query.RepExtPort};
+			pushDnp(_.CMD_SEND_MSG, session, _.STEP_LISTEN_AT);
+			break;
+		case _.STEP_SAVE_SESSION:
+			session.Dest = {IP:session.req.query.MsgSrcIP, Port:session.req.query.MsgSrcPort};
+			replyRnp(_.CMD_SAVE_SESSION, session);
+			session.Dest = {IP:clientIP, Port:session.req.query.RepExtPort};
+			pushDnp(_.CMD_SAVE_SESSION, session);
+			break;
+		default: // error
+			console.log('unknown state:' + session.State + ', step:' + session.Step);
+			session.res.send(400);
+			break;
+		}
 		break;
-	case constant.STATE_PUNCH_DEST: // Favor Destination side
+	case _.STATE_PUNCH_DEST: // Favor Destination side
 		session.res.send(403, 'STATE_PUNCH_DEST not supported yet'); // ToDo: implement later
 		break;
-	case constant.STATE_RELAY: // Relay
+	case _.STATE_RELAY: // Relay
 		session.res.send(403, 'Relay not supported yet'); // ToDo: implement later
 		break;
-	case constant.STATE_UNKNOWN: // error
+	case _.STATE_UNKNOWN: // error
 		session.res.send(403);
 		break;
 	default: // error
@@ -263,18 +306,25 @@ function processSessionRequest(session) {
 	}
 } // end of processSessionRequest
 
-function reply(cmd, session, next, ready) {
+function genCmd(cmd, session, target, next, ready) {
 	var constant = require("./constants");
+	var helper = require('./helper');
+	
+	// command go to Destination if no target argument assigned
+	if (!target) {
+		target = session.Dnp;
+	}
+	var source = (target === session.Dnp ? session.Rnp: session.Dnp);
 
 	var json = {Version:1, Type:cmd, SocketType:'UDP', Nonce:session.Nonce};
 
 	if (next) {
 		json.Reply = {};
 		var url = '/InMatch/UDP/' + session.State + '/' + session.Rnp.ID + '/' + session.Dnp.ID;
-		var query = [
-			'Nonce=' + session.Nonce,
-			'LocalPort=' + session.Rnp.Location.LocalUDPPort
-		].join('&');
+		var query = 'Nonce=' + session.Nonce;
+		if (session.Piggyback) {
+			query += session.Piggyback;
+		}
 
 		json.Reply.OK = url + '?' + query + '&Next=' + next;
 		json.Reply.Error = url;
@@ -286,48 +336,52 @@ function reply(cmd, session, next, ready) {
 
 	switch (cmd) {
 	case constant.CMD_SEND_MSG:
+		json.LocalPort = session.Dnp.Location.LocalUDPPort;
+		json.Destination = session.Dest;
+		json.Count = 3;
 		break;
 	case constant.CMD_LISTEN_MSG:
-		json.LocalPort = session.Rnp.Location.LocalUDPPort;
+		json.LocalPort = target.Location.LocalUDPPort;
 		json.Timeout = 10;
 		break;
 	case constant.CMD_MAP_UPNP:
+		break;
 	case constant.CMD_GET_EXT_PORT:
+		json.LocalPort = target.Location.LocalUDPPort;
+		json.Destination = {IP:helper.config.server[0].address, Port:helper.config.server[0].udp[0]};
+		break;
 	case constant.CMD_SAVE_SESSION:
-		json.LocalPort = session.Rnp.Location.LocalUDPPort;
-		json.Destination = {IP:session.Dnp.Location.LocalIP, Port:session.Dnp.Location.LocalUDPPort};
+		json.LocalPort = target.Location.LocalUDPPort;
+		json.Destination = session.Dest;
 		break;
 	default:
 		break;
 	}
+}
 
+function replyRnp(cmd, session, next, ready) {
+	var json = genCmd(cmd, session, session.Rnp, next, ready);
 	session.res.send(json);
 }
 
-function push(cmd, session, next, ready) {
+function replyDnp(cmd, session, next, ready) {
+	var json = genCmd(cmd, session, session.Dnp, next, ready);
+	session.res.send(json);
+}
+
+function pushRnp(cmd, session, next, ready) {
+	var json = genCmd(cmd, session, session.Rnp, next, ready);
+	push(session.Rnp, json);
+}
+
+function pushDnp(cmd, session, next, ready) {
+	var json = genCmd(cmd, session, session.Dnp, next, ready);
+	push(session.Dnp, json);
+}
+
+function push(target, json) {
 	var http = require('http');
-	var constant = require('./constants');
 	var helper = require('./helper');
-
-	var json = {Version:1, Type:cmd, SocketType:'UDP', Nonce:session.Nonce};
-
-	switch (cmd) {
-	case constant.CMD_SEND_MSG:
-		json.LocalPort = session.Dnp.Location.LocalUDPPort;
-		json.Destination = {IP:session.Rnp.Location.LocalIP, Port:session.Rnp.Location.LocalUDPPort};
-		json.Count = 1;
-		break;
-	case constant.CMD_LISTEN_MSG:
-		break;
-	case constant.CMD_MAP_UPNP:
-	case constant.CMD_GET_EXT_PORT:
-	case constant.CMD_SAVE_SESSION:
-		json.LocalPort = session.Dnp.Location.LocalUDPPort;
-		json.Destination = {IP:session.Rnp.Location.LocalIP, Port:session.Rnp.Location.LocalUDPPort};
-		break;
-	default:
-		break;
-	}
 	
 	// Make a HTTP POST request to push module
 	var jsonstr = JSON.stringify(json) ;
@@ -335,7 +389,7 @@ function push(cmd, session, next, ready) {
 	var options = {
 			hostname: helper.config.server[0].address,
 			port: helper.config.server[0].port,
-			path: helper.config.server[0].push + session.Dnp.ID,
+			path: helper.config.server[0].push + target.ID,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
