@@ -20,6 +20,7 @@ function onMessageHandler(msg) {
 	if (_expiredNonce.indexOf(msg.Nonce) !== -1) {
 		// found expired nonce, discard this request
 		console.log('Ignore duplicated nonce request: ' + msg.Nonce);
+		return true;
 	} else {
 		_expiredNonce.push(msg.Nonce);
 		setTimeout(function(nonce) {
