@@ -255,8 +255,8 @@ function processSessionRequest(session) {
 		session.res.send(403, 'STATE_UPNP_DEST not supported yet'); // ToDo: implement later
 		break;
 	case _.STATE_PUNCH_REQ: // Favor Requestor side
-		if (session.req.query.RepExtPort) {
-			session.Piggyback = "&ReqExtPort=" + session.req.query.RepExtPort; // RepExtPort piggyback
+		if (session.req.query.ReqExtPort) {
+			session.Piggyback = "&ReqExtPort=" + session.req.query.ReqExtPort; // RepExtPort piggyback
 		}
 		switch (session.Step) {
 		case _.STEP_UNKNOWN:
@@ -276,13 +276,13 @@ function processSessionRequest(session) {
 			replyRnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
 			break;
 		case _.STEP_SEND_TO:
-			session.Dest = {IP:clientIP, Port:session.req.query.RepExtPort};
-			pushDnp(_.CMD_SEND_MSG, session, _.STEP_LISTEN_AT);
+			session.Dest = {IP:clientIP, Port:session.req.query.ReqExtPort};
+			pushDnp(_.CMD_SEND_MSG, session);
 			break;
 		case _.STEP_SAVE_SESSION:
 			session.Dest = {IP:session.req.query.MsgSrcIP, Port:session.req.query.MsgSrcPort};
 			replyRnp(_.CMD_SAVE_SESSION, session);
-			session.Dest = {IP:clientIP, Port:session.req.query.RepExtPort};
+			session.Dest = {IP:clientIP, Port:session.req.query.ReqExtPort};
 			pushDnp(_.CMD_SAVE_SESSION, session);
 			break;
 		default: // error
@@ -349,6 +349,8 @@ function genCmd(cmd, session, target, next, ready) {
 	case constant.CMD_GET_EXT_PORT:
 		json.LocalPort = target.Location.LocalUDPPort;
 		json.Destination = {IP:helper.config.server[0].address, Port:helper.config.server[0].udp[0]};
+		json.Count = 3;
+		json.Timeout = 10;
 		break;
 	case constant.CMD_SAVE_SESSION:
 		json.LocalPort = target.Location.LocalUDPPort;
