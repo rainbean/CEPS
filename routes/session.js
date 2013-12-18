@@ -357,6 +357,8 @@ function genCmd(cmd, session, target, next, ready) {
 	default:
 		break;
 	}
+	
+	return json;
 }
 
 function replyRnp(cmd, session, next, ready) {
