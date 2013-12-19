@@ -255,16 +255,16 @@ function processSessionRequest(session) {
 		session.res.send(403, 'STATE_UPNP_DEST not supported yet'); // ToDo: implement later
 		break;
 	case _.STATE_PUNCH_REQ: // Favor Requestor side
-		if (session.req.query.ReqExtPort) {
-			session.Piggyback = "&ReqExtPort=" + session.req.query.ReqExtPort; // RepExtPort piggyback
+		if (session.req.query.OkExtPort) {
+			session.Piggyback = "&OkExtPort=" + session.req.query.OkExtPort; // OkExtPort piggyback
 		}
 		switch (session.Step) {
 		case _.STEP_UNKNOWN:
 			replyRnp(_.CMD_GET_EXT_PORT, session, _.STEP_EXT_PORT);
 			break;
 		case _.STEP_EXT_PORT:
-			session.Piggyback = "&ReqExtPort=" + session.req.query.ExtPort; // ExtPort is requestor's reply 
 			session.res.send(202);
+			session.Piggyback = "&OkExtPort=" + session.req.query.ExtPort; // ExtPort is requestor's reply 
 			pushDnp(_.CMD_GET_EXT_PORT, session, _.STEP_PUNCH);
 			break;
 		case _.STEP_PUNCH:
@@ -276,13 +276,14 @@ function processSessionRequest(session) {
 			replyRnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
 			break;
 		case _.STEP_SEND_TO:
-			session.Dest = {IP:clientIP, Port:session.req.query.ReqExtPort};
+			session.res.send(202);
+			session.Dest = {IP:clientIP, Port:session.req.query.OkExtPort};
 			pushDnp(_.CMD_SEND_MSG, session);
 			break;
 		case _.STEP_SAVE_SESSION:
 			session.Dest = {IP:session.req.query.MsgSrcIP, Port:session.req.query.MsgSrcPort};
 			replyRnp(_.CMD_SAVE_SESSION, session);
-			session.Dest = {IP:clientIP, Port:session.req.query.ReqExtPort};
+			session.Dest = {IP:clientIP, Port:session.req.query.OkExtPort};
 			pushDnp(_.CMD_SAVE_SESSION, session);
 			break;
 		default: // error
@@ -292,7 +293,42 @@ function processSessionRequest(session) {
 		}
 		break;
 	case _.STATE_PUNCH_DEST: // Favor Destination side
-		session.res.send(403, 'STATE_PUNCH_DEST not supported yet'); // ToDo: implement later
+		if (session.req.query.OkExtPort) {
+			session.Piggyback = "&OkExtPort=" + session.req.query.OkExtPort; // OkExtPort piggyback
+		}
+		switch (session.Step) {
+		case _.STEP_UNKNOWN:
+			pushDnp(_.CMD_GET_EXT_PORT, session, _.STEP_EXT_PORT);
+			break;
+		case _.STEP_EXT_PORT:
+			session.res.send(202);
+			session.Piggyback = "&OkExtPort=" + session.req.query.ExtPort; // ExtPort is requestor's reply 
+			pushRnp(_.CMD_GET_EXT_PORT, session, _.STEP_PUNCH);
+			break;
+		case _.STEP_PUNCH:
+			session.res.send(202);
+			session.Dest = {IP:clientIP, Port:session.req.query.ExtPort};
+			pushDnp(_.CMD_SEND_MSG, session, _.STEP_LISTEN_AT);
+			break;
+		case _.STEP_LISTEN_AT:
+			replyDnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
+			break;
+		case _.STEP_SEND_TO:
+			session.res.send(202);
+			session.Dest = {IP:clientIP, Port:session.req.query.OkExtPort};
+			pushRnp(_.CMD_SEND_MSG, session);
+			break;
+		case _.STEP_SAVE_SESSION:
+			session.Dest = {IP:session.req.query.MsgSrcIP, Port:session.req.query.MsgSrcPort};
+			replyDnp(_.CMD_SAVE_SESSION, session);
+			session.Dest = {IP:clientIP, Port:session.req.query.OkExtPort};
+			pushRnp(_.CMD_SAVE_SESSION, session);
+			break;
+		default: // error
+			console.log('unknown state:' + session.State + ', step:' + session.Step);
+			session.res.send(400);
+			break;
+		}
 		break;
 	case _.STATE_RELAY: // Relay
 		session.res.send(403, 'Relay not supported yet'); // ToDo: implement later
