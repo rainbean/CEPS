@@ -384,7 +384,8 @@ function genCmd(cmd, session, target, next, ready) {
 		break;
 	case constant.CMD_GET_EXT_PORT:
 		json.LocalPort = target.Location.LocalUDPPort;
-		json.Destination = {IP:helper.config.server[0].address, Port:helper.config.server[0].udp[0]};
+		// 2nd port of primary server is unused, so it may be more trustable.
+		json.Destination = {IP:helper.config.server[0].address, Port:helper.config.server[0].udp[1]};
 		json.Count = 3;
 		json.Timeout = 10;
 		break;
