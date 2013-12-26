@@ -51,7 +51,7 @@ exports.addDevice = function(req, res) {
 		}
 	} catch (err) {
 		// err in parse the file, reset it
-		console.log(err);
+		console.error(err);
 		devices = [];
 	}
 
@@ -60,7 +60,7 @@ exports.addDevice = function(req, res) {
 		devices.push(dev);
 		fs.writeFile('./db/devices.json', JSON.stringify(devices));
 	}
-	console.log(devices);
+	//console.log(devices);
 	res.send(202);
 };
 

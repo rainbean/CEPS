@@ -96,6 +96,8 @@ exports.init = function(req, res) {
 		return res.send(401); // invalid endpoint
 	}
 	
+	console.log('Session negociation begin: src <' + req.params.SrcEndpointID + '> to dest <' + req.params.DestEndpointID + '>');
+	
 	// generate random session nonce
 	session.Nonce = helper.createGUID();
 	
