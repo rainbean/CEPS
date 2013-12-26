@@ -10,6 +10,7 @@ var service = require('./routes/service');
 var session = require('./routes/session');
 var http = require('http');
 var path = require('path');
+var log4js = require('log4js');
 
 var app = express();
 
@@ -25,6 +26,7 @@ app.use(express.methodOverride());
 app.use(app.router);
 app.use(express.compress()); // gzip
 app.use(express.static(path.join(__dirname, 'public')));
+log4js.replaceConsole();
 
 // development only
 if ('development' === app.get('env')) {
@@ -36,7 +38,7 @@ helper.getConfig();
 
 // check server setting
 if (!helper.config.server) {
-	console.log('Invalid server config, please modify config.json!!!');
+	console.fatal('Invalid server config, please modify config.json!!!');
 	process.exit(1);
 }
 

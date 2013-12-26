@@ -19,7 +19,7 @@ function onMessageHandler(msg) {
 	
 	if (_expiredNonce.indexOf(msg.Nonce) !== -1) {
 		// found expired nonce, discard this request
-		console.log('Ignore duplicated nonce request: ' + msg.Nonce);
+		//console.debug('Ignore duplicated nonce request: ' + msg.Nonce);
 		return true;
 	} else {
 		_expiredNonce.push(msg.Nonce);
@@ -50,18 +50,16 @@ function onMessageHandler(msg) {
 			}
 		};
 	
+	console.log('Recevied UDP <REQuest_GET_EXT_PORT>, ack back with PUSH notification');
 	var req = http.request(options, function(res) {
 		res.setEncoding('utf8');
-		if (res.statusCode !== 200) {
-			console.log('Nginx return error:' + res.statusCode);
-		}
 		res.on('data', function (data) {
-			console.log('Nginx return: ' + data);
+			console.info('Nginx <' + res.statusCode + '> : ' + data);
 		}); // always consume data trunk
 	});
 
 	req.on('error', function(e) {
-		console.log('problem with request: ' + e.message);
+		console.error('problem with PUSH: ' + e.message);
 	});
 	req.write(jsonstr); // write data to request body
 	req.end();
@@ -76,10 +74,8 @@ function onMessageHandler(msg) {
  */
 function onMessage(msg, remote) {
 	var S = require('string');
-	var constant = require("./constants");
 	var helper = require('./helper');
-
-	console.log(remote.address + ':' + remote.port +' - ' + msg.length);
+	
 	// {Type:1, Data: [], Nonce:"Rose"}
 	var json = helper.getCepsUdpMsg(msg);
 	if (!json) {
@@ -99,7 +95,7 @@ function createUDPD(port) {
 		var address = udpd.address();
 		console.log('UDP Server listening on ' + address.address + ":" + address.port);
 		if (address.port !== port) {
-			console.log('Failed to listen at configured UDP port, please modify config.json!!!');
+			console.fatal('Failed to listen at configured UDP port, please modify config.json!!!');
 			process.exit(1);
 		}
 	});

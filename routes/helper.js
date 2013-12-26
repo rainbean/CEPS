@@ -101,6 +101,26 @@ exports.getCepsUdpMsg = function(msg) {
 	return json;
 };
 
+function printLog(msg) {
+	var _ = require("./constants");
+	var cmd = '';
+	switch (msg.Type) {
+	case _.REQ_SEND_MSG:
+		cmd = 'REQuest_SEND_MSG';
+		break;
+	case _.REP_SEND_MSG:
+		cmd = 'REPly_SEND_MSG';
+		break;
+	case _.REQ_GET_EXT_PORT:
+		cmd = 'REQuest_GET_EXT_PORT';
+		break;
+	case _.DATA_MSG:
+		cmd = 'DATA_MSG';
+		break;
+	}
+	console.log('Send UDP <' + cmd + '> to ' + msg.Destination.IP + ':' + msg.Destination.Port);
+}
+
 /**
  * Send CEPS message to specific address and port from specific local port, N times continuously
  *  
@@ -137,11 +157,12 @@ exports.sendCepsUdpMsg = function(msg) {
 			count = 1; // reset to once
 		}
 		
+		printLog(msg);
+		
 		var done = count;
 		for (var i=0; i<count; ++i) {
 			client.send(udp, 0, udp.length, msg.Destination.Port, msg.Destination.IP, function(err, bytes) {
 				done --;
-				console.log('Send out udp message: err = ' + err + ', bytes = ' +  bytes);
 				if (done === 0) {
 					client.close();
 				}

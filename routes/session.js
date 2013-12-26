@@ -17,6 +17,38 @@ function getNetworkProfile(eid) {
 	}
 }
 
+function dumpState(session) {
+	var _ = require("./constants");
+	
+	var state = '';
+	
+	switch (session.State) {
+	case _.STATE_UNKNOWN:
+		state = 'UNKOWN';
+		break;
+	case _.STATE_PRIVATE:
+		state = 'PRIVATE';
+		break;
+	case _.STATE_PUBLIC_REQ:
+	case _.STATE_PUBLIC_DEST:
+		state = 'PUBLIC';
+		break;
+	case _.STATE_UPNP_REQ:
+	case _.STATE_UPNP_DEST:
+		state = 'UPNP';
+		break;
+	case _.STATE_PUNCH_REQ:
+	case _.STATE_PUNCH_DEST:
+		state = 'HOLE_PUNCH';
+		break;
+	case _.STATE_RELAY:
+		state = 'RELAY';
+		break;
+	}
+	
+	console.log('Planned session state: <' + state + '>, next step: <' + session.Step + '>');
+}
+
 /**
  * Request Connection to Peer Endpoint. 
  * 
@@ -120,7 +152,7 @@ exports.match = function(req, res) {
 	
 	// check whether it's failed case in previous round
 	if (req.query.ErrorCode) {
-		console.log ('Failed state:' + req.params.State + ', ErrorCode:' + req.query.ErrorCode + ', ErrorDesc:' + req.query.ErrorDesc);
+		console.warn ('Failed state:' + req.params.State + ', ErrorCode:' + req.query.ErrorCode + ', ErrorDesc:' + req.query.ErrorDesc);
 		// decide state machine model
 		getNextSessionState(session);
 	} else {
@@ -201,6 +233,9 @@ function getNextSessionState(session) {
 		// even relay failed, abort the session
 		session.State = constant.STATE_UNKNOWN;
 	}
+	
+	// debug purpose
+	dumpState(session);
 } // end of getNextSessionState
 
 /**
@@ -237,7 +272,7 @@ function processSessionRequest(session) {
 			pushDnp(_.CMD_SAVE_SESSION, session);
 			break;
 		default: // error
-			console.log('unknown state:' + session.State + ', step:' + session.Step);
+			console.error('unknown state:' + session.State + ', step:' + session.Step);
 			session.res.send(400);
 			break;
 		}
@@ -287,7 +322,7 @@ function processSessionRequest(session) {
 			pushDnp(_.CMD_SAVE_SESSION, session);
 			break;
 		default: // error
-			console.log('unknown state:' + session.State + ', step:' + session.Step);
+			console.error('unknown state:' + session.State + ', step:' + session.Step);
 			session.res.send(400);
 			break;
 		}
@@ -325,7 +360,7 @@ function processSessionRequest(session) {
 			pushRnp(_.CMD_SAVE_SESSION, session);
 			break;
 		default: // error
-			console.log('unknown state:' + session.State + ', step:' + session.Step);
+			console.error('unknown state:' + session.State + ', step:' + session.Step);
 			session.res.send(400);
 			break;
 		}
@@ -401,21 +436,25 @@ function genCmd(cmd, session, target, next, ready) {
 }
 
 function replyRnp(cmd, session, next, ready) {
+	console.log('Reply src side with CMD <' + cmd + '>');
 	var json = genCmd(cmd, session, session.Rnp, next, ready);
 	session.res.send(json);
 }
 
 function replyDnp(cmd, session, next, ready) {
+	console.log('Reply dest side with CMD <' + cmd + '>');
 	var json = genCmd(cmd, session, session.Dnp, next, ready);
 	session.res.send(json);
 }
 
 function pushRnp(cmd, session, next, ready) {
+	console.log('Push src side with CMD <' + cmd + '>');
 	var json = genCmd(cmd, session, session.Rnp, next, ready);
 	push(session.Rnp, json);
 }
 
 function pushDnp(cmd, session, next, ready) {
+	console.log('Push dest side with CMD <' + cmd + '>');
 	var json = genCmd(cmd, session, session.Dnp, next, ready);
 	push(session.Dnp, json);
 }
@@ -438,10 +477,15 @@ function push(target, json) {
 			}
 		};
 	
-	var req = http.request(options);
+	var req = http.request(options, function(res) {
+		res.setEncoding('utf8');
+		res.on('data', function (data) {
+			console.info('Nginx <' + res.statusCode + '> : ' + data);
+		}); // always consume data trunk
+	});
 	
 	req.on('error', function(e) {
-		console.log('problem with request: ' + e.message);
+		console.error('problem with request: ' + e.message);
 	});
 	req.write(jsonstr); // write data to request body
 	req.end();
