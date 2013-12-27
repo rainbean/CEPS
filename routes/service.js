@@ -95,7 +95,7 @@ function createUDPD(port) {
 		var address = udpd.address();
 		console.log('UDP Server listening on ' + address.address + ":" + address.port);
 		if (address.port !== port) {
-			console.fatal('Failed to listen at configured UDP port, please modify config.json!!!');
+			console.error('Failed to listen at configured UDP port, please modify config.json!!!');
 			process.exit(1);
 		}
 	});

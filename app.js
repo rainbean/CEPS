@@ -38,7 +38,7 @@ helper.getConfig();
 
 // check server setting
 if (!helper.config.server) {
-	console.fatal('Invalid server config, please modify config.json!!!');
+	console.error('Invalid server config, please modify config.json!!!');
 	process.exit(1);
 }
 
