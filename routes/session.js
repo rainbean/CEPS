@@ -26,7 +26,8 @@ function dumpState(session) {
 	case _.STATE_UNKNOWN:
 		state = 'UNKOWN';
 		break;
-	case _.STATE_PRIVATE:
+	case _.STATE_PRIVATE_REQ:
+	case _.STATE_PRIVATE_DEST:
 		state = 'PRIVATE';
 		break;
 	case _.STATE_PUBLIC_REQ:
@@ -73,9 +74,9 @@ function dumpState(session) {
 
 exports.init = function(req, res) {
 	var helper = require('./helper');
-	var constant = require("./constants");
+	var _ = require("./constants");
 	
-	var session = {State: constant.STATE_UNKNOWN, Step: constant.STEP_UNKNOWN,
+	var session = {State: _.STATE_UNKNOWN, Step: _.STEP_UNKNOWN,
 			Rnp: {}, Dnp: {}, Nonce: '', req: req, res: res};
 	
 	if (req.params.SocketType !== 'UDP' ||
@@ -130,8 +131,8 @@ exports.init = function(req, res) {
 exports.match = function(req, res) {
 	var fs = require('fs');
 	var helper = require('./helper');
-	var constant = require("./constants");
-	var session = {State: parseInt(req.params.State), Step: constant.STEP_UNKNOWN,
+	var _ = require("./constants");
+	var session = {State: parseInt(req.params.State), Step: _.STEP_UNKNOWN,
 			Rnp: {}, Dnp: {}, Nonce: '', req: req, res: res};
 
 	if (req.params.SocketType !== 'UDP' ||
@@ -173,26 +174,29 @@ exports.match = function(req, res) {
  * @param session session object  
  */
 function getNextSessionState(session) {
-	var constant = require("./constants");
+	var _ = require("./constants");
 
 	if (session.Rnp.UDP.Blocked || session.Dnp.UDP.Blocked) {
-		session.State = constant.STATE_UNKNOWN;
-	} else if (session.State < constant.STATE_PRIVATE &&
+		session.State = _.STATE_UNKNOWN;
+	} else if (session.State < _.STATE_PRIVATE_REQ &&
 			session.Dnp.Location.ExtIP === session.Rnp.Location.ExtIP) {
-		session.State = constant.STATE_PRIVATE;
-	} else if (session.State < constant.STATE_PUBLIC_REQ &&
+		session.State = _.STATE_PRIVATE_REQ;
+	} else if (session.State < _.STATE_PRIVATE_DEST &&
+			session.Dnp.Location.ExtIP === session.Rnp.Location.ExtIP) {
+		session.State = _.STATE_PRIVATE_DEST;
+	} else if (session.State < _.STATE_PUBLIC_REQ &&
 			session.Rnp.UDP.Public === true) {
-		session.State = constant.STATE_PUBLIC_REQ;
-	} else if (session.State < constant.STATE_PUBLIC_DEST &&
+		session.State = _.STATE_PUBLIC_REQ;
+	} else if (session.State < _.STATE_PUBLIC_DEST &&
 			session.Dnp.UDP.Public === true) {
-		session.State = constant.STATE_PUBLIC_DEST;
-	} else if (session.State < constant.STATE_UPNP_REQ &&
+		session.State = _.STATE_PUBLIC_DEST;
+	} else if (session.State < _.STATE_UPNP_REQ &&
 			session.Rnp.UDP.UPnP.Enabled === true) {
-		session.State = constant.STATE_UPNP_REQ;
-	} else if (session.State < constant.STATE_UPNP_DEST &&
+		session.State = _.STATE_UPNP_REQ;
+	} else if (session.State < _.STATE_UPNP_DEST &&
 			session.Dnp.UDP.UPnP.Enabled === true) {
-		session.State = constant.STATE_UPNP_DEST;
-	} else if (session.State < constant.STATE_PUNCH_DEST) {
+		session.State = _.STATE_UPNP_DEST;
+	} else if (session.State < _.STATE_PUNCH_DEST) {
 		// else try hole punch or relay
 		var pcpr = [
 			1 & session.Dnp.UDP.Router.PortChange,
@@ -208,7 +212,7 @@ function getNextSessionState(session) {
 		case '0110':
 		case '0111':
 		case '1110':
-			session.State = constant.STATE_PUNCH_REQ;
+			session.State = _.STATE_PUNCH_REQ;
 			break;
 		case '0000':
 		case '0100':
@@ -219,21 +223,21 @@ function getNextSessionState(session) {
 		case '1011':
 		case '1100':
 		case '1101':
-			session.State = constant.STATE_PUNCH_DEST;
+			session.State = _.STATE_PUNCH_DEST;
 			break;
 		case '1111':
-			session.State = constant.STATE_RELAY;
+			session.State = _.STATE_RELAY;
 			break;
 		default:
-			session.State = constant.STATE_RELAY;
+			session.State = _.STATE_RELAY;
 			break;
 		}
-	} else if (session.State < constant.STATE_RELAY) {
+	} else if (session.State < _.STATE_RELAY) {
 		// relay as last straw
-		session.State = constant.STATE_RELAY;
+		session.State = _.STATE_RELAY;
 	} else {
 		// even relay failed, abort the session
-		session.State = constant.STATE_UNKNOWN;
+		session.State = _.STATE_UNKNOWN;
 	}
 	
 	// debug purpose
@@ -257,7 +261,7 @@ function processSessionRequest(session) {
 	}
 
 	switch (session.State) {
-	case _.STATE_PRIVATE: // in same domain
+	case _.STATE_PRIVATE_REQ: // in same domain, requester listen
 		switch (session.Step) {
 		case _.STEP_UNKNOWN:
 			replyRnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
@@ -268,10 +272,32 @@ function processSessionRequest(session) {
 			pushDnp(_.CMD_SEND_MSG, session);
 			break;
 		case _.STEP_SAVE_SESSION:
-			session.Dest = {IP:session.Dnp.Location.LocalIP, Port:session.Dnp.Location.LocalUDPPort};
+			session.Dest = {IP:session.req.query.MsgSrcIP, Port:session.req.query.MsgSrcPort};
 			replyRnp(_.CMD_SAVE_SESSION, session);
 			session.Dest = {IP:session.Rnp.Location.LocalIP, Port:session.Rnp.Location.LocalUDPPort};
 			pushDnp(_.CMD_SAVE_SESSION, session);
+			break;
+		default: // error
+			console.error('unknown state:' + session.State + ', step:' + session.Step);
+			session.res.send(400);
+			break;
+		}
+		break;
+	case _.STATE_PRIVATE_DEST: // in same domain, destination listen
+		switch (session.Step) {
+		case _.STEP_UNKNOWN:
+			pushDnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
+			break;
+		case _.STEP_SEND_TO:
+			session.res.send(202);
+			session.Dest = {IP:session.Dnp.Location.LocalIP, Port:session.Dnp.Location.LocalUDPPort};
+			pushRnp(_.CMD_SEND_MSG, session);
+			break;
+		case _.STEP_SAVE_SESSION:
+			session.Dest = {IP:session.req.query.MsgSrcIP, Port:session.req.query.MsgSrcPort};
+			replyDnp(_.CMD_SAVE_SESSION, session);
+			session.Dest = {IP:session.Dnp.Location.LocalIP, Port:session.Dnp.Location.LocalUDPPort};
+			pushRnp(_.CMD_SAVE_SESSION, session);
 			break;
 		default: // error
 			console.error('unknown state:' + session.State + ', step:' + session.Step);
@@ -380,7 +406,7 @@ function processSessionRequest(session) {
 } // end of processSessionRequest
 
 function genCmd(cmd, session, target, next, ready) {
-	var constant = require("./constants");
+	var _ = require("./constants");
 	var helper = require('./helper');
 	
 	// command go to Destination if no target argument assigned
@@ -408,25 +434,25 @@ function genCmd(cmd, session, target, next, ready) {
 	}
 
 	switch (cmd) {
-	case constant.CMD_SEND_MSG:
+	case _.CMD_SEND_MSG:
 		json.LocalPort = session.Dnp.Location.LocalUDPPort;
 		json.Destination = session.Dest;
 		json.Count = 3;
 		break;
-	case constant.CMD_LISTEN_MSG:
+	case _.CMD_LISTEN_MSG:
 		json.LocalPort = target.Location.LocalUDPPort;
 		json.Timeout = 10;
 		break;
-	case constant.CMD_MAP_UPNP:
+	case _.CMD_MAP_UPNP:
 		break;
-	case constant.CMD_GET_EXT_PORT:
+	case _.CMD_GET_EXT_PORT:
 		json.LocalPort = target.Location.LocalUDPPort;
 		// 2nd port of primary server is unused, so it may be more trustable.
 		json.Destination = {IP:helper.config.server[0].address, Port:helper.config.server[0].udp[1]};
 		json.Count = 3;
 		json.Timeout = 10;
 		break;
-	case constant.CMD_SAVE_SESSION:
+	case _.CMD_SAVE_SESSION:
 		json.LocalPort = target.Location.LocalUDPPort;
 		json.Destination = session.Dest;
 		break;

@@ -22,15 +22,16 @@ define("REQ_GET_EXT_PORT", 0x0008);
 define("LEN_REQ_GET_EXT_PORT", 41);
 
 // state of session profiles
-define("STATE_UNKNOWN",     0);
-define("STATE_PRIVATE",     1);
-define("STATE_PUBLIC_REQ",  2);
-define("STATE_PUBLIC_DEST", 3);
-define("STATE_UPNP_REQ",    4);
-define("STATE_UPNP_DEST",   5);
-define("STATE_PUNCH_REQ",   6);
-define("STATE_PUNCH_DEST",  7);
-define("STATE_RELAY",       8);
+define("STATE_UNKNOWN",      0);
+define("STATE_PRIVATE_REQ",  1);
+define("STATE_PRIVATE_DEST", 2);
+define("STATE_PUBLIC_REQ",   3);
+define("STATE_PUBLIC_DEST",  4);
+define("STATE_UPNP_REQ",     5);
+define("STATE_UPNP_DEST",    6);
+define("STATE_PUNCH_REQ",    7);
+define("STATE_PUNCH_DEST",   8);
+define("STATE_RELAY",        9);
 
 // steps to advance of state machine of session profiles
 define("STEP_UNKNOWN",      0);
