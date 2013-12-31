@@ -156,6 +156,10 @@ exports.match = function(req, res) {
 	// check whether it's failed case in previous round
 	if (req.query.ErrorCode) {
 		console.warn ('Failed state:' + req.params.State + ', ErrorCode:' + req.query.ErrorCode + ', ErrorDesc:' + req.query.ErrorDesc);
+
+		// generate random session nonce
+		session.Nonce = helper.createGUID();
+		
 		// decide state machine model
 		getNextSessionState(session);
 	} else {
@@ -286,6 +290,7 @@ function processSessionRequest(session) {
 	case _.STATE_PRIVATE_DEST: // in same domain, destination listen
 		switch (session.Step) {
 		case _.STEP_UNKNOWN:
+			session.res.send(202);
 			pushDnp(_.CMD_LISTEN_MSG, session, _.STEP_SAVE_SESSION, _.STEP_SEND_TO);
 			break;
 		case _.STEP_SEND_TO:
@@ -361,6 +366,7 @@ function processSessionRequest(session) {
 		}
 		switch (session.Step) {
 		case _.STEP_UNKNOWN:
+			session.res.send(202);
 			pushDnp(_.CMD_GET_EXT_PORT, session, _.STEP_EXT_PORT);
 			break;
 		case _.STEP_EXT_PORT:
